@@ -719,7 +719,13 @@ propagation.resolveConflicts(results)    // 冲突消解
 
 ### 13.4 写入端"笨"
 
-底仓是 append-only 流水，写入端不筛选、不蒸馏、不总结：
+> **写入端可以挑，但挑了就不删。**
+
+- **挑**：全量是目标，但运行中的 Agent 受上下文/算力限制，做不到真正的全量——按"重要会话判据"有选择地写入（见 13.8）
+- **不删**：一旦写入底仓，永不删除（append-only）；任何物理删除前必须过红线校验（13.7）
+- **不加工**：写入的内容保持原始形态——不蒸馏、不总结、不打分；时态标记是蒸馏层的产出，不是写入端的筛选
+
+底仓流水格式：
 
 ```json
 {
@@ -727,7 +733,7 @@ propagation.resolveConflicts(results)    // 冲突消解
   "ts": "2026-08-19T21:00:00+08:00",
   "session": "webchat | a2a | cron | ...",
   "type": "conversation | tool_result | decision | ...",
-  "content": "原始内容（不筛选）",
+  "content": "原始内容（不加工）",
   "state": "burning | ash | sealed",
   "distilled_to": ["mem_xxx"],
   "meta": {}
@@ -764,7 +770,7 @@ propagation.resolveConflicts(results)    // 冲突消解
 
 - `memory/raw/` 跑两周
 - 试点即带时态字段（实现中为正式字段 `state`，文本标记 `<!-- state: burning -->` 是降级形态）
-- "重要会话"最小判据（三选一）：
+- **"重要会话"最小判据（三选一）**——即 13.4 中"挑"的执行标准；挑中的会话写入后同样永不删除：
   1. 含工具结果摘要的会话
   2. 拍板/决策类对话
   3. 情感显著波动（affective_tag warmth/significance 高）
