@@ -1,0 +1,22 @@
+{
+  "name": "csb-memory",
+  "version": "1.0.0",
+  "description": "Carbon-Silicon Bond Memory System — 碳硅契记忆系统（CSB-Memory v1.0）",
+  "main": "lib/index.js",
+  "scripts": {
+    "test": "node test/run-all-tests.js",
+    "example:basic": "node examples/basic-usage.js",
+    "example:hive": "node examples/hive-query.js"
+  },
+  "keywords": [
+    "csb",
+    "memory",
+    "agent",
+    "carbon-silicon-bond",
+    "碳硅契"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  }
+}

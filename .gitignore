@@ -1,0 +1,4 @@
+node_modules/
+data/a2a-memories/*.md
+data/audit/*.jsonl
+data/hive/*.json
