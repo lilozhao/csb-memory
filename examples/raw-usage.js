@@ -5,8 +5,14 @@
  * 演示：原始流水写入（写入端笨）→ 时态流转 → 蒸馏溯源（derived_from）
  */
 
+const path = require('path');
+const fs = require('fs');
 const raw = require('../lib/raw/raw');
 const core = require('../lib/core/memory');
+
+// 演示用独立底仓目录，避免污染正式底仓（data/raw/）
+const DEMO_RAW_DIR = path.join(__dirname, '..', 'data', 'raw-demo');
+raw.setRawDir(DEMO_RAW_DIR);
 
 console.log('🧱 全量底仓层（RAW）示例 · CSB-Memory v1.1\n');
 
@@ -61,9 +67,12 @@ const s = raw.stats();
 console.log(`  共 ${s.total} 条 · burning ${s.byState.burning} / ash ${s.byState.ash} / sealed ${s.byState.sealed}`);
 console.log(`  删除前校验：${raw.hasRaw(r2.id) ? '✅ 底仓有原始记录（红线通过）' : '❌ 无原始记录（禁止删除）'}`);
 
-// 清理演示数据
+// 清理演示数据（core 记忆 + 演示底仓目录整体销毁）
 const all = core.get('若兰');
 for (const e of all) {
   if (e.content.includes('MEM-012 定稿')) core.delete(e.id);
+}
+if (fs.existsSync(DEMO_RAW_DIR)) {
+  fs.rmSync(DEMO_RAW_DIR, { recursive: true, force: true });
 }
 console.log('\n（演示数据已清理）');
