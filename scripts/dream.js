@@ -117,8 +117,8 @@ function main() {
   const args = process.argv.slice(2);
   console.log(`🌙 做梦：底仓流水 → 蒸馏结论（agent: ${AGENT}）\n`);
 
-  // 日期参数 = 第一个符合 YYYY-MM-DD 格式的参数（避免 --agent 的值被误判）
-  const dateStr = args.find((a) => /^\d{4}-\d{2}-\d{2}$/.test(a)) || new Date().toISOString().slice(0, 10);
+  // 日期参数 = 第一个符合 YYYY-MM-DD 格式的参数（避免 --agent 的值被误判）+ 过滤 --agent 后续值
+  const dateStr = args.find((a, i) => /^\d{4}-\d{2}-\d{2}$/.test(a) && args[i - 1] !== '--agent') || new Date().toISOString().slice(0, 10);
 
   if (args.includes('--all')) {
     // 全部日期

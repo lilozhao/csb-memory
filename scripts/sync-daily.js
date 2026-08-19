@@ -316,7 +316,8 @@ function syncDate(dateStr) {
 }
 
 function main() {
-  const args = process.argv.slice(2);
+  // 过滤 --agent X 参数，避免被当作日期
+  const args = process.argv.slice(2).filter((a, i, arr) => !(a === '--agent' || arr[i - 1] === '--agent'));
   console.log('🌸 日常记忆同步：日记 → CSB-Memory\n');
 
   if (args.includes('--all')) {
