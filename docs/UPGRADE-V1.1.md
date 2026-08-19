@@ -35,6 +35,8 @@ Gogs:    http://172.28.0.124:3000/lilozhao/csb-memory.git
 
 ## 三、升级步骤
 
+> 💡 **A2A 环境特别说明**：csb-a2a-aip 仓库**无需任何改动**——记忆已解耦，其 memory.js 是薄包装，自动转发到 csb-memory。环境里唯一要做的：**把 csb-memory clone 到与 csb-a2a-aip 平级目录**（薄包装按 `../csb-memory` 相对路径查找）。验证：`node memory.js help` 输出 csb-memory 的 CLI 即正常。
+
 ### 步骤 1：获取代码
 
 ```bash
