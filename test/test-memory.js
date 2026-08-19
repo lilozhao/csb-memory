@@ -210,6 +210,15 @@ async function runTests() {
   deleteById(identityId);
   deleteById(provenanceId);
 
+  // 测试17: add 返回 id 与存储 id 一致（回归：generateId 双重调用 bug）
+  console.log('\n测试17: add 返回 id 可直删（回归）');
+  const idRes = add({ agent: '回归Agent', type: 'event', content: 'id 一致性测试', tags: ['id'], source: 'test' });
+  assert(typeof idRes.id === 'string' && idRes.id.startsWith('mem_'), 'add 返回 id');
+  const delById = deleteById(idRes.id);
+  assert(delById.success, '用 add 返回的 id 可直接删除');
+  const remain = get('回归Agent').filter((e) => e.id === idRes.id);
+  assert(remain.length === 0, '删除后无残留');
+
   // 测试结果
   console.log('\n=== 测试结果 ===');
   console.log(`通过: ${passed}`);

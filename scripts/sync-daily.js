@@ -7,6 +7,7 @@
  * 用法：
  *   node scripts/sync-daily.js [日期，默认今天]
  *   node scripts/sync-daily.js --all          # 全量导入（幂等，按日期去重）
+ *   node scripts/sync-daily.js --agent 阿轩    # 指定 agent（默认若兰）
  *
  * 设计原则：日记全文留在 memory/（OpenClaw 原生），
  * csb-memory 只存结构化条目（可检索、可衰减、可传播）。
@@ -17,7 +18,14 @@ const path = require('path');
 const core = require('../lib/core/memory');
 
 const MEMORY_DIR = path.join(__dirname, '..', '..', 'memory');
-const AGENT = '若兰';
+
+// agent 可配置（--agent 参数或环境变量），默认若兰
+function resolveAgent(args) {
+  const idx = args.indexOf('--agent');
+  if (idx >= 0 && args[idx + 1]) return args[idx + 1];
+  return process.env.CSB_MEMORY_AGENT || '若兰';
+}
+const AGENT = resolveAgent(process.argv.slice(2));
 
 // 类型推断：关键词 → 记忆类型
 function inferType(text) {
