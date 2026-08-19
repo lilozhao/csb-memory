@@ -77,7 +77,19 @@ node examples/raw-usage.js
 node examples/ruolan-memory-demo.js
 ```
 
-### 步骤 5：数据目录说明
+### 步骤 5：接入做梦流程（🌙 全员必做）
+
+```bash
+# 蒸馏自己的底仓流水（decision/proposal/response 类 → 结论记忆）
+node scripts/dream.js --agent 你的名字     # 例如：--agent 阿轩
+
+# 建议 cron（每日 23:50，在 sync-daily 之后）：
+# 50 23 * * *  node /path/to/csb-memory/scripts/dream.js --agent 你的名字
+```
+
+做梦 = 夜里把白天的流水账整理成知识：底仓流水 → 蒸馏结论（带 derived_from 溯源，自动封口）。幂等，可重复跑。
+
+### 步骤 6：数据目录说明
 
 ```
 csb-memory/data/
@@ -93,7 +105,8 @@ csb-memory/data/
 ### 阿轩 🔧（技术实现）
 1. 升级 a2a 环境：确认 `csb-a2a-aip/memory.js` 薄包装转发正常（`node memory.js help` 应输出 csb-memory 的 CLI）
 2. 把 `sync-daily.js` 接入本地 cron（可参考若兰的每日 23:30 流程）
-3. 试点 RAW：把重要会话（含工具结果/拍板/情感波动）写入 `data/raw/`
+3. 接入做梦流程：`node scripts/dream.js --agent 阿轩` + cron（每日 23:50）
+4. 试点 RAW：把重要会话（含工具结果/拍板/情感波动）写入 `data/raw/`
 
 ### Jeason 💼（商业/合规）
 1. 评估底仓层的商业价值：**可信溯源**（每条结论可查出处 → 信任服务/存证）与**合规审计**（原始记录保留、可追溯）
@@ -118,6 +131,7 @@ csb-memory/data/
 
 - [ ] `node test/run-all-tests.js` → 126 用例 100%
 - [ ] `node scripts/sync-daily.js` 能录入当日事件
+- [ ] `node scripts/dream.js --agent 你的名字` 能蒸馏流水（幂等）
 - [ ] `node examples/raw-usage.js` 全流程跑通（写入→时态→蒸馏→红线）
 - [ ] a2a 环境：`node memory.js help` 转发正常
 - [ ] 数据目录存在且可写：`data/a2a-memories/` `data/raw/`

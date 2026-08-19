@@ -11,9 +11,10 @@
  * - raw.link 自动封口（sealed）
  *
  * 用法：
- *   node scripts/dream.js            # 蒸馏今天
- *   node scripts/dream.js 2026-08-19 # 蒸馏指定日期
- *   node scripts/dream.js --all      # 蒸馏全部未蒸馏流水
+ *   node scripts/dream.js                 # 蒸馏今天（默认 agent：若兰）
+ *   node scripts/dream.js 2026-08-19      # 蒸馏指定日期
+ *   node scripts/dream.js --agent 阿轩     # 指定 agent（每人跑自己的梦）
+ *   node scripts/dream.js --all           # 蒸馏全部未蒸馏流水
  *
  * 幂等：已封口（distilled_to 非空）的流水自动跳过。
  */
@@ -23,7 +24,14 @@ const path = require('path');
 const core = require('../lib/core/memory');
 const raw = require('../lib/raw/raw');
 
-const AGENT = '若兰';
+// agent 可配置（--agent 参数或环境变量），默认若兰
+function resolveAgent(args) {
+  const idx = args.indexOf('--agent');
+  if (idx >= 0 && args[idx + 1]) return args[idx + 1];
+  return process.env.CSB_MEMORY_AGENT || '若兰';
+}
+
+const AGENT = resolveAgent(process.argv.slice(2));
 
 // 值得蒸馏的流水类型
 const DISTILLABLE = ['decision', 'proposal', 'response', 'milestone', 'lesson'];
@@ -82,7 +90,10 @@ function dreamDate(dateStr) {
 
 function main() {
   const args = process.argv.slice(2);
-  console.log('🌙 做梦：底仓流水 → 蒸馏结论\n');
+  console.log(`🌙 做梦：底仓流水 → 蒸馏结论（agent: ${AGENT}）\n`);
+
+  // 日期参数 = 第一个不以 -- 开头的参数
+  const dateStr = args.find((a) => !a.startsWith('--')) || new Date().toISOString().slice(0, 10);
 
   if (args.includes('--all')) {
     // 全部日期
@@ -103,14 +114,13 @@ function main() {
     }
     console.log(`\n📊 全量做梦完成：${dates.length} 天流水，蒸馏 ${distilled} 条结论`);
   } else {
-    const dateStr = args[0] || new Date().toISOString().slice(0, 10);
     const r = dreamDate(dateStr);
     console.log(`\n📊 ${dateStr}：流水 ${r.total} 条，蒸馏 ${r.distilled} 条结论，跳过 ${r.skipped} 条`);
   }
 
   const stats = raw.stats();
   console.log(`📚 底仓现状：共 ${stats.total} 条 · 封口 ${stats.byState.sealed} 条`);
-  console.log(`   若兰结构化记忆：${core.get(AGENT).length} 条`);
+  console.log(`   ${AGENT} 结构化记忆：${core.get(AGENT).length} 条`);
 }
 
 main();

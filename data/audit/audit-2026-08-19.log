@@ -381,3 +381,4 @@
 {"timestamp":"2026-08-19T12:28:14.450Z","action":"memory.get","actor":"若兰","target":"若兰","result":"success","detail":"{\"agent\":\"若兰\",\"count\":26}","audit_id":"audit_1787142494450_2y86"}
 {"timestamp":"2026-08-19T12:28:14.499Z","action":"memory.get","actor":"若兰","target":"若兰","result":"success","detail":"{\"agent\":\"若兰\",\"count\":26}","audit_id":"audit_1787142494499_gefi"}
 {"timestamp":"2026-08-19T12:28:14.503Z","action":"memory.query","actor":"若兰","target":"若兰","result":"success","detail":"{\"agent\":\"若兰\",\"tags\":[\"dream\"],\"count\":3}","audit_id":"audit_1787142494503_ywrc"}
+{"timestamp":"2026-08-19T12:30:19.267Z","action":"memory.get","actor":"若兰","target":"若兰","result":"success","detail":"{\"agent\":\"若兰\",\"count\":26}","audit_id":"audit_1787142619267_alqn"}
