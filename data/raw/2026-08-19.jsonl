@@ -1,3 +1,0 @@
-{"id":"raw_mt01wxv0_nj1s","ts":"2026-08-19T12:11:54.348Z","session":"webchat","type":"conversation","content":"一澜：记忆系统创建后主要是给用起来","state":"burning","distilled_to":[],"meta":{}}
-{"id":"raw_mt01wxv2_0vmo","ts":"2026-08-19T12:11:54.350Z","session":"a2a","type":"decision","content":"拍板：MEM-012 底仓层命名 RAW，全量永久，溯源写死","state":"sealed","distilled_to":["mem_mt01wxvl_jg8n"],"meta":{}}
-{"id":"raw_mt01wxv4_g1nx","ts":"2026-08-19T12:11:54.352Z","session":"cron","type":"tool_result","content":"sync-daily 执行结果：18 条录入","state":"burning","distilled_to":[],"meta":{"tool":"sync-daily"}}
