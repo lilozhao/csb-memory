@@ -374,3 +374,10 @@
 {"timestamp":"2026-08-19T12:11:54.366Z","action":"memory.add","actor":"distill","target":"若兰","result":"success","detail":"{\"agent\":\"若兰\",\"type\":\"decision\",\"structural_weight\":0}","audit_id":"audit_1787141514366_zr1a"}
 {"timestamp":"2026-08-19T12:11:54.469Z","action":"memory.get","actor":"若兰","target":"若兰","result":"success","detail":"{\"agent\":\"若兰\",\"count\":24}","audit_id":"audit_1787141514469_5om0"}
 {"timestamp":"2026-08-19T12:11:54.488Z","action":"memory.delete","actor":"若兰","target":"","result":"success","detail":"{\"id\":\"mem_mt01wxve_0iin\"}","audit_id":"audit_1787141514488_y32g"}
+{"timestamp":"2026-08-19T12:28:09.803Z","action":"memory.add","actor":"dream","target":"若兰","result":"success","detail":"{\"agent\":\"若兰\",\"type\":\"discovery\",\"structural_weight\":0}","audit_id":"audit_1787142489803_5ksu"}
+{"timestamp":"2026-08-19T12:28:09.818Z","action":"memory.add","actor":"dream","target":"若兰","result":"success","detail":"{\"agent\":\"若兰\",\"type\":\"lesson\",\"structural_weight\":0}","audit_id":"audit_1787142489818_02os"}
+{"timestamp":"2026-08-19T12:28:09.833Z","action":"memory.add","actor":"dream","target":"若兰","result":"success","detail":"{\"agent\":\"若兰\",\"type\":\"decision\",\"structural_weight\":0.6}","audit_id":"audit_1787142489833_87an"}
+{"timestamp":"2026-08-19T12:28:09.858Z","action":"memory.get","actor":"若兰","target":"若兰","result":"success","detail":"{\"agent\":\"若兰\",\"count\":26}","audit_id":"audit_1787142489858_jzoo"}
+{"timestamp":"2026-08-19T12:28:14.450Z","action":"memory.get","actor":"若兰","target":"若兰","result":"success","detail":"{\"agent\":\"若兰\",\"count\":26}","audit_id":"audit_1787142494450_2y86"}
+{"timestamp":"2026-08-19T12:28:14.499Z","action":"memory.get","actor":"若兰","target":"若兰","result":"success","detail":"{\"agent\":\"若兰\",\"count\":26}","audit_id":"audit_1787142494499_gefi"}
+{"timestamp":"2026-08-19T12:28:14.503Z","action":"memory.query","actor":"若兰","target":"若兰","result":"success","detail":"{\"agent\":\"若兰\",\"tags\":[\"dream\"],\"count\":3}","audit_id":"audit_1787142494503_ywrc"}
