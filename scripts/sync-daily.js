@@ -148,13 +148,14 @@ function main() {
     for (const d of dates) total += syncDate(d);
     console.log(`\n📊 全量同步完成：${dates.length} 天，共录入 ${total} 条`);
   } else {
-    const dateStr = args[0] || new Date().toISOString().slice(0, 10);
+    // 日期只认 YYYY-MM-DD 格式（避免 --agent 的值被误判为日期）
+    const dateStr = args.find((a) => /^\d{4}-\d{2}-\d{2}$/.test(a)) || new Date().toISOString().slice(0, 10);
     syncDate(dateStr);
   }
 
   const total = core.get(AGENT).length;
-  console.log(`\n📚 若兰记忆档案现有 ${total} 条结构化记忆`);
-  console.log(`   档案位置：data/a2a-memories/若兰.md`);
+  console.log(`\n📚 ${AGENT} 记忆档案现有 ${total} 条结构化记忆`);
+  console.log(`   档案位置：data/a2a-memories/${AGENT}.md`);
 }
 
 main();
