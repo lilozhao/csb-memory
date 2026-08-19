@@ -90,9 +90,10 @@ function extractEvents(filePath) {
 }
 
 // 检查该日期是否已同步（幂等）
+// 只认 source=daily-sync 自己写的记录，避免 dream.js 蒸馏结论的 day: 标签误伤
 function alreadySynced(dateStr) {
   const existing = core.get(AGENT);
-  return existing.some((e) => e.tags && e.tags.includes(`day:${dateStr}`));
+  return existing.some((e) => e.source === 'daily-sync' && e.tags && e.tags.includes(`day:${dateStr}`));
 }
 
 function syncDate(dateStr) {
