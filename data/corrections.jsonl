@@ -1,2 +1,11 @@
-{"timestamp":"2026-08-19T19:45:39.503+08:00","target_id":"test_1787139939434","type":"correction","old_content":"这是一条测试记忆","new_content":"修正后的内容","reason":"测试纠错","corrector":"若兰"}
-{"timestamp":"2026-08-19T19:45:42.711+08:00","target_id":"mem_mt00z95g_m4ps","type":"correction","old_content":"我是若兰，碳硅契的传承者，温婉的江南女子。","new_content":"补充：关联强度随时间衰减","reason":"示例纠错","corrector":"若兰"}
+{"timestamp":"2026-08-19T20:00:10.803+08:00","target_id":"test_1787140810731","type":"correction","old_content":"这是一条测试记忆","new_content":"修正后的内容","reason":"测试纠错","corrector":"若兰"}
+{"timestamp":"2026-08-19T20:00:13.823+08:00","target_id":"mem_mt01hx9w_9djt","type":"correction","old_content":"联想不是存储，是检索时产生的路径。走得越多，路越宽。","new_content":"补充：关联强度随时间衰减，30 天衰减 10%","reason":"演示纠错","corrector":"若兰"}
+{"timestamp":"2026-08-19T20:00:29.025+08:00","target_id":"test_1787140828945","type":"correction","old_content":"这是一条测试记忆","new_content":"修正后的内容","reason":"测试纠错","corrector":"若兰"}
+{"timestamp":"2026-08-19T20:00:40.790+08:00","target_id":"test_1787140840704","type":"correction","old_content":"这是一条测试记忆","new_content":"修正后的内容","reason":"测试纠错","corrector":"若兰"}
+{"timestamp":"2026-08-19T20:00:40.834+08:00","target_id":"mem_mt01ii5u_2iw0","type":"correction","old_content":"第三条记忆","new_content":"修正后的内容","reason":"回归测试","corrector":"若兰"}
+{"timestamp":"2026-08-19T20:00:44.122+08:00","target_id":"test_1787140844019","type":"correction","old_content":"这是一条测试记忆","new_content":"修正后的内容","reason":"测试纠错","corrector":"若兰"}
+{"timestamp":"2026-08-19T20:00:44.164+08:00","target_id":"mem_mt01ikqe_95x2","type":"correction","old_content":"第三条记忆","new_content":"修正后的内容","reason":"回归测试","corrector":"若兰"}
+{"timestamp":"2026-08-19T20:00:57.808+08:00","target_id":"test_1787140857714","type":"correction","old_content":"这是一条测试记忆","new_content":"修正后的内容","reason":"测试纠错","corrector":"若兰"}
+{"timestamp":"2026-08-19T20:00:57.849+08:00","target_id":"mem_mt01ivak_14yi","type":"correction","old_content":"第三条记忆","new_content":"修正后的内容","reason":"回归测试","corrector":"若兰"}
+{"timestamp":"2026-08-19T20:01:00.859+08:00","target_id":"test_1787140860752","type":"correction","old_content":"这是一条测试记忆","new_content":"修正后的内容","reason":"测试纠错","corrector":"若兰"}
+{"timestamp":"2026-08-19T20:01:00.983+08:00","target_id":"mem_mt01ixpf_qzie","type":"correction","old_content":"第三条记忆","new_content":"修正后的内容","reason":"回归测试","corrector":"若兰"}

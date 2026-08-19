@@ -177,6 +177,34 @@ async function runTests() {
   assert(summaryText.includes('测试Agent'), '摘要包含Agent名称');
   assert(summaryText.includes('记忆'), '摘要包含记忆信息');
 
+  // 测试15: 连续追加 + 纠错后解析（回归：双分隔符 bug）
+  console.log('\n测试15: 连续追加与纠错后解析（回归）');
+  add({ agent: '回归Agent', type: 'event', content: '第一条记忆', tags: ['甲'], source: 'test' });
+  add({ agent: '回归Agent', type: 'event', content: '第二条记忆', tags: ['乙'], source: 'test' });
+  add({ agent: '回归Agent', type: 'event', content: '第三条记忆', tags: ['丙'], source: 'test' });
+  let regEntries = get('回归Agent');
+  assert(regEntries.length === 3, '三条记忆全部解析');
+  const regFirst = regEntries[0];
+  const fb = feedback(regFirst.id, 'correction', '修正后的内容', '回归测试');
+  assert(fb.success, '纠错成功');
+  regEntries = get('回归Agent');
+  assert(regEntries.length === 3, '纠错后仍三条记忆（无错位）');
+  const corrected = regEntries.find((e) => e.id === regFirst.id);
+  assert(corrected && corrected.content === '修正后的内容', '纠错内容正确');
+  // 清理
+  regEntries.forEach((e) => deleteById(e.id));
+
+  // 测试16: 中文 tags 数组解析（回归：单行非JSON数组 bug）
+  console.log('\n测试16: 中文 tags 数组解析（回归）');
+  add({ agent: '回归Agent', type: 'lesson', content: '带中文标签的记忆', tags: ['碳硅契', '承诺'], source: 'test' });
+  const tagged = query({ agent: '回归Agent', tags: ['碳硅契'] });
+  assert(tagged.length === 1, '中文 tags 查询命中');
+  assert(tagged[0].content === '带中文标签的记忆', '记忆内容完整（后续字段未被吞）');
+  const coreOnly = query({ agent: '回归Agent', core_identity_only: true });
+  assert(coreOnly.length === 0, '非身份记忆不被 core_identity_only 命中');
+  // 清理
+  deleteById(tagged[0].id);
+
   // 清理测试数据
   console.log('\n清理测试数据...');
   deleteById(identityId);
