@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * run-all-tests.js — CSB-Memory v1.0 全量测试运行器
+ * run-all-tests.js — CSB-Memory v1.1 全量测试运行器
  * 
  * 运行所有单元测试
  * 用法: node run-all-tests.js
@@ -14,11 +14,12 @@ const tests = [
   { name: 'lifecycle.js (core)', file: 'test-lifecycle.js' },
   { name: 'value-scorer.js (core)', file: 'test-value-scorer.js' },
   { name: 'hive.js (v1.0)', file: 'test-hive.js' },
-  { name: 'propagation.js (v1.0)', file: 'test-propagation.js' }
+  { name: 'propagation.js (v1.0)', file: 'test-propagation.js' },
+  { name: 'raw.js (v1.1)', file: 'test-raw.js' }
 ];
 
 async function runAllTests() {
-  console.log('=== CSB-Memory v1.0 全量测试 ===\n');
+  console.log('=== CSB-Memory v1.1 全量测试 ===\n');
   
   let totalPassed = 0;
   let totalFailed = 0;
