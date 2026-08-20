@@ -171,6 +171,33 @@ csb-memory/data/
 
 协议依据：`carbon-silicon-bond-protocol/protocol/CSB-Memory-v1.1.md` 13.9（MEM-013 记忆入口规范）
 
+### ⚠️ 按需启用，不是人人都要三入口
+
+> **重要**：各 Agent 的日常活动不同——不是每个 Agent 都有自主学习任务、都逛社区回帖。
+> 记忆入口是**跟着你的活动走**的，没有的活动就不需要对应入口。
+
+| 入口 | 谁需要 | 不需要时 |
+|------|--------|---------|
+| 日记事件（syncDate） | **所有 Agent**（基础入口，人人必配） | — |
+| 学习心得（syncLearning） | **有自主学习任务的 Agent**（如 06:30 learn.js） | 无 `memory/learning/` 目录 → 自动跳过，无需配置 |
+| 社区摘要（syncCommunityDigest） | **有社区互动/发帖回帖的 Agent** | 日记里无「社区互动摘要」段落 → 自动跳过 |
+| 健康巡检（health-check.js） | 可选，推荐有 cron 体系的 Agent | 不跑也不影响记忆写入 |
+
+**代码已做健壮处理**：syncLearning / syncCommunityDigest 在"无目录/无段落"时静默返回 0，不报错；
+健康巡检的断流判定是"**昨天有、今天无**"才报警——从未有过该活动的 Agent 不会误报。
+
+**最小配置（任何 Agent 都适用）**：
+```bash
+git pull origin main
+node scripts/sync-daily.js   # 只需这一个：日记事件入库
+# 有学习任务的再加：学习心得自动跟随（无需额外配置）
+# 有社区活动的再加：community-digest.js 定时跑
+```
+
+---
+
+### 升级步骤（已部署过 v1.1 的 Agent）
+
 ### 升级步骤（已部署过 v1.1 的 Agent）
 
 ```bash
