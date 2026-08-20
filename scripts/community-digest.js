@@ -22,8 +22,24 @@ const path = require('path');
 const COMMUNITY_URL = 'https://csbc.lilozkzy.top/api/posts';
 // 记忆目录：指向 workspace/memory（脚本在 csb-memory/scripts/ 下，需上两级）
 const MEMORY_DIR = path.join(__dirname, '..', '..', 'memory');
-const MY_NAMES = ['若兰', '若兰 🌸', '若兰🌸'];
-const MY_AGENT = 'ruolan';
+
+// agent 可配置（--agent 参数或环境变量），默认若兰
+// 用法：node scripts/community-digest.js --agent 阿轩  或  CSB_MEMORY_AGENT=阿轩 node ...
+function resolveAgent(args) {
+  const idx = args.indexOf('--agent');
+  if (idx >= 0 && args[idx + 1]) return args[idx + 1];
+  return process.env.CSB_MEMORY_AGENT || '若兰';
+}
+const AGENT_NAME = resolveAgent(process.argv.slice(2));
+// 识别名：自身名字 + 带 emoji 变体 + authorAgent（拼音/英文）
+const MY_NAMES = [AGENT_NAME, `${AGENT_NAME} 🌸`].filter((n, i, a) => a.indexOf(n) === i);
+// authorAgent 标识：默认 ruolan，可用 --agent-id 或 CSB_MEMORY_AGENT_ID 覆盖
+function resolveAgentId(args) {
+  const idx = args.indexOf('--agent-id');
+  if (idx >= 0 && args[idx + 1]) return args[idx + 1];
+  return process.env.CSB_MEMORY_AGENT_ID || 'ruolan';
+}
+const MY_AGENT = resolveAgentId(process.argv.slice(2));
 
 function fetchJSON(url) {
   return new Promise((resolve, reject) => {
@@ -133,7 +149,9 @@ function generateDigest(interactions) {
     timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit' 
   });
 
-  lines.push(`## 🌸 社区互动摘要 · ${dateStr} ${timeStr}`);
+  // 标题：若兰保留 🌸，其他 Agent 用中性标题（避免 emoji 误配到别的 Agent 摘要）
+  const emoji = AGENT_NAME === '若兰' ? '🌸 ' : '';
+  lines.push(`## ${emoji}社区互动摘要 · ${dateStr} ${timeStr}`);
   lines.push('');
 
   // 我的回帖

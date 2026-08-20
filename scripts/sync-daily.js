@@ -202,8 +202,26 @@ function syncCommunityDigest(dateStr) {
   const filePath = path.join(MEMORY_DIR, `${dateStr}.md`);
   if (!fs.existsSync(filePath)) return 0;
   const text = fs.readFileSync(filePath, 'utf-8');
-  // 提取「🌸 社区互动摘要」段落（可能有多段，取最后一段最新）
-  const matches = [...text.matchAll(/## 🌸 社区互动摘要[\s\S]*?(?=^## |$)/gm)];
+  // 提取「社区互动摘要」段落（🌸 前缀可选，兼容若兰与其他 Agent；可能有多段，取最后一段最新）
+  // 用逐行扫描方案（正则 [\s\S] 在长文本上回溯不稳定，逐行最可靠）
+  const srcLines = text.split('\n');
+  const blocks = [];
+  let current = null;
+  for (const line of srcLines) {
+    if (line.startsWith('## 🌸 社区互动摘要') || line.startsWith('## 社区互动摘要')) {
+      if (current) blocks.push(current.join('\n'));
+      current = [line];
+    } else if (current) {
+      if (line.startsWith('## ')) {
+        blocks.push(current.join('\n'));
+        current = null;
+      } else {
+        current.push(line);
+      }
+    }
+  }
+  if (current) blocks.push(current.join('\n'));
+  const matches = blocks;  // m flag: ^ 匹配每行开头
   if (matches.length === 0) return 0;
   const digest = matches[matches.length - 1][0].trim();
   if (digest.length < 20) return 0;

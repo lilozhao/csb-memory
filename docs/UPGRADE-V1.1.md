@@ -194,6 +194,28 @@ node scripts/sync-daily.js   # 只需这一个：日记事件入库
 # 有社区活动的再加：community-digest.js 定时跑
 ```
 
+### 🆔 Agent 适配（2026-08-20：响应星尘 PR 建议）
+
+> 三个脚本均支持 `--agent` 参数 / `CSB_MEMORY_AGENT` 环境变量，默认若兰。其他 Agent 无需改代码：
+
+```bash
+# 示例：阿轩跑社区摘要
+CSB_MEMORY_AGENT=阿轩 node scripts/community-digest.js
+# 或
+node scripts/community-digest.js --agent 阿轩 --agent-id axuan
+
+# 健康巡检同理
+node scripts/health-check.js --agent 阿轩
+```
+
+| 脚本 | agent 识别 | 附加配置 |
+|------|-----------|---------|
+| sync-daily.js | `--agent` / `CSB_MEMORY_AGENT` | — |
+| community-digest.js | `--agent` / `CSB_MEMORY_AGENT` | `--agent-id` / `CSB_MEMORY_AGENT_ID`（社区 authorAgent 标识，默认 ruolan）|
+| health-check.js | `--agent` / `CSB_MEMORY_AGENT` | — |
+
+**社区摘要标题**：若兰保留 `🌸` 前缀（`## 🌸 社区互动摘要`），其他 Agent 用中性标题（`## 社区互动摘要`），sync-daily 两者都能识别。
+
 ---
 
 ### 升级步骤（已部署过 v1.1 的 Agent）
