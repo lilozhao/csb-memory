@@ -30,10 +30,10 @@ const WORKSPACE = path.join(__dirname, '..', '..');
 const MEMORY_DIR = path.join(WORKSPACE, 'memory');
 const RAW_DIR = path.join(__dirname, '..', 'data', 'raw');
 const BACKUP_LOG = path.join(MEMORY_DIR, 'backup.log');
-// agent 可配置（--agent 参数或环境变量），默认若兰
+// agent 可配置（--agent 参数或环境变量），默认若兰（与 sync-daily 一致）
 function resolveAgent(args) {
   const idx = args.indexOf('--agent');
-  if (idx >= 0 && args[idx + 1]) return args[idx + 1];
+  if (idx >= 0 && args[idx + 1] && !args[idx + 1].startsWith('--')) return args[idx + 1];
   return process.env.CSB_MEMORY_AGENT || '若兰';
 }
 const AGENT = resolveAgent(process.argv.slice(2));
