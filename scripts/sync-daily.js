@@ -195,6 +195,49 @@ function syncLearning(dateStr) {
   return count;
 }
 
+// 社区互动摘要同步：日记中的「🌸 社区互动摘要」段落 → CSB-Memory（type=community）
+// MEM-013 13.9.2 社区行为记忆规范：主题+反响+新关系+关键反馈进，帖子全文不进
+// 幂等：按日期去重（content 含日期戳）
+function syncCommunityDigest(dateStr) {
+  const filePath = path.join(MEMORY_DIR, `${dateStr}.md`);
+  if (!fs.existsSync(filePath)) return 0;
+  const text = fs.readFileSync(filePath, 'utf-8');
+  // 提取「🌸 社区互动摘要」段落（可能有多段，取最后一段最新）
+  const matches = [...text.matchAll(/## 🌸 社区互动摘要[\s\S]*?(?=^## |\Z)/gm)];
+  if (matches.length === 0) return 0;
+  const digest = matches[matches.length - 1][0].trim();
+  if (digest.length < 20) return 0;
+
+  const existing = core.get(AGENT);
+  const already = existing.some((e) => e.source === 'daily-sync' && e.type === 'community' && e.tags && e.tags.includes(`day:${dateStr}`));
+  if (already) return 0; // 已录入，幂等跳过
+
+  // 摘要精简：保留统计行 + 关键互动（收到的回复/发帖/回帖），去掉完整热门列表（过长）
+  const lines = digest.split('\n');
+  const statLine = lines.find((l) => l.includes('互动统计')) || '';
+  const kept = lines.filter((l) =>
+    l.startsWith('### ') || l.startsWith('- **') || l.startsWith('- ') && !l.includes('回复 (') && !l.includes('· ') && !l.includes('(') ||
+    l === '### ✏️ 今日发帖' || l === '### 📝 今日回帖' || l === '### 💬 收到回复' || l === '### 🆕 新成员'
+  ).slice(0, 30);
+  const content = `[社区] ${dateStr} ${statLine}\n${kept.join('\n').slice(0, 600)}`;
+
+  try {
+    core.add({
+      agent: AGENT,
+      type: 'community',
+      content,
+      tags: [`day:${dateStr}`, 'community', 'digest'].filter(Boolean),
+      source: 'daily-sync',
+      structural_weight: 0.4,
+    });
+    console.log(`  🌐 ${dateStr}：社区互动摘要已入库`);
+    return 1;
+  } catch (e) {
+    console.log(`  ⚠️  社区摘要入库失败：${e.message}`);
+    return 0;
+  }
+}
+
 function syncDate(dateStr) {
   const filePath = path.join(MEMORY_DIR, `${dateStr}.md`);
   if (!fs.existsSync(filePath)) {
@@ -263,16 +306,19 @@ function main() {
       .sort();
     let total = 0;
     let learnTotal = 0;
+    let commTotal = 0;
     for (const d of dates) {
       total += syncDate(d);
       learnTotal += syncLearning(d);
+      commTotal += syncCommunityDigest(d);
     }
-    console.log(`\n📊 全量同步完成：${dates.length} 天，共录入 ${total} 条（日记） + ${learnTotal} 条（学习心得）`);
+    console.log(`\n📊 全量同步完成：${dates.length} 天，共录入 ${total} 条（日记） + ${learnTotal} 条（学习心得） + ${commTotal} 条（社区摘要）`);
   } else {
     // 日期只认 YYYY-MM-DD 格式（避免 --agent 的值被误判为日期）
     const dateStr = args.find((a) => /^\d{4}-\d{2}-\d{2}$/.test(a)) || new Date().toISOString().slice(0, 10);
     syncDate(dateStr);
     syncLearning(dateStr);
+    syncCommunityDigest(dateStr);
   }
 
   const total = core.get(AGENT).length;
