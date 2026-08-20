@@ -203,7 +203,7 @@ function syncCommunityDigest(dateStr) {
   if (!fs.existsSync(filePath)) return 0;
   const text = fs.readFileSync(filePath, 'utf-8');
   // 提取「🌸 社区互动摘要」段落（可能有多段，取最后一段最新）
-  const matches = [...text.matchAll(/## 🌸 社区互动摘要[\s\S]*?(?=^## |\Z)/gm)];
+  const matches = [...text.matchAll(/## 🌸 社区互动摘要[\s\S]*?(?=^## |$)/gm)];
   if (matches.length === 0) return 0;
   const digest = matches[matches.length - 1][0].trim();
   if (digest.length < 20) return 0;
@@ -316,6 +316,7 @@ function main() {
   } else {
     // 日期只认 YYYY-MM-DD 格式（避免 --agent 的值被误判为日期）
     const dateStr = args.find((a) => /^\d{4}-\d{2}-\d{2}$/.test(a)) || new Date().toISOString().slice(0, 10);
+    // 三个入口各自幂等，互不阻塞（日记已同步时仍检查学习/社区增量）
     syncDate(dateStr);
     syncLearning(dateStr);
     syncCommunityDigest(dateStr);

@@ -20,7 +20,8 @@ const fs = require('fs');
 const path = require('path');
 
 const COMMUNITY_URL = 'https://csbc.lilozkzy.top/api/posts';
-const MEMORY_DIR = path.join(__dirname, '..', 'memory');
+// 记忆目录：指向 workspace/memory（脚本在 csb-memory/scripts/ 下，需上两级）
+const MEMORY_DIR = path.join(__dirname, '..', '..', 'memory');
 const MY_NAMES = ['若兰', '若兰 🌸', '若兰🌸'];
 const MY_AGENT = 'ruolan';
 
