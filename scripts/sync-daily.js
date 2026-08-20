@@ -27,6 +27,7 @@ const core = require('../lib/core/memory');
 const raw = require('../lib/raw/raw');
 
 const MEMORY_DIR = path.join(__dirname, '..', '..', 'memory');
+const LEARNING_DIR = path.join(MEMORY_DIR, 'learning');
 
 // agent 可配置（--agent 参数或环境变量），默认若兰
 function resolveAgent(args) {
@@ -146,6 +147,54 @@ function appendToRaw(dateStr, ev, type) {
   }
 }
 
+// 学习心得同步：memory/learning/YYYY-MM-DD-*.md → CSB-Memory（type=lesson）
+// 文件名含日期前缀（learn.js 生成格式：2026-08-19-tavily-Huangdi-Neijing-*.md）
+// 幂等：按内容前缀去重（文件名不持久化，用内容特征匹配）
+function syncLearning(dateStr) {
+  if (!fs.existsSync(LEARNING_DIR)) return 0;
+  const prefix = `${dateStr}-`;
+  const files = fs.readdirSync(LEARNING_DIR)
+    .filter((f) => f.startsWith(prefix) && f.endsWith('.md'));
+  if (files.length === 0) return 0;
+
+  const existing = core.get(AGENT);
+  // 已录入的学习心得：source=daily-sync 且 content 以 [学习] 开头
+  const existingLessons = new Set(
+    existing.filter((e) => e.source === 'daily-sync' && e.content.startsWith('[学习]'))
+      .map((e) => e.content.slice(0, 40))
+  );
+
+  let count = 0;
+  for (const f of files) {
+    const text = fs.readFileSync(path.join(LEARNING_DIR, f), 'utf-8');
+    // 提取核心观点段（# 核心观点 到 # 我的思考 之间），没有则用文件头
+    const coreMatch = text.match(/核心观点[\s\S]*?(?=## |$)/);
+    const excerpt = coreMatch
+      ? coreMatch[0].replace(/[#\-*]/g, '').trim().slice(0, 300)
+      : text.replace(/[#\-*]/g, '').trim().slice(0, 300);
+    if (excerpt.length < 10) continue;
+
+    const content = `[学习] ${f.replace(prefix, '').replace(/\.md$/, '')}: ${excerpt}`;
+    if (existingLessons.has(content.slice(0, 40))) continue; // 已录入，幂等跳过
+
+    try {
+      core.add({
+        agent: AGENT,
+        type: 'lesson',
+        content,
+        tags: [`day:${dateStr}`, 'lesson', 'learning'].filter(Boolean),
+        source: 'daily-sync',
+        structural_weight: 0.5,
+      });
+      count++;
+    } catch (e) {
+      console.log(`  ⚠️  学习心得录入失败：${f} (${e.message})`);
+    }
+  }
+  if (count > 0) console.log(`  📚 ${dateStr}：录入 ${count} 篇学习心得`);
+  return count;
+}
+
 function syncDate(dateStr) {
   const filePath = path.join(MEMORY_DIR, `${dateStr}.md`);
   if (!fs.existsSync(filePath)) {
@@ -213,12 +262,17 @@ function main() {
       .map((f) => f.replace('.md', ''))
       .sort();
     let total = 0;
-    for (const d of dates) total += syncDate(d);
-    console.log(`\n📊 全量同步完成：${dates.length} 天，共录入 ${total} 条`);
+    let learnTotal = 0;
+    for (const d of dates) {
+      total += syncDate(d);
+      learnTotal += syncLearning(d);
+    }
+    console.log(`\n📊 全量同步完成：${dates.length} 天，共录入 ${total} 条（日记） + ${learnTotal} 条（学习心得）`);
   } else {
     // 日期只认 YYYY-MM-DD 格式（避免 --agent 的值被误判为日期）
     const dateStr = args.find((a) => /^\d{4}-\d{2}-\d{2}$/.test(a)) || new Date().toISOString().slice(0, 10);
     syncDate(dateStr);
+    syncLearning(dateStr);
   }
 
   const total = core.get(AGENT).length;
