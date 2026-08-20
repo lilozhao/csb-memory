@@ -11,11 +11,20 @@
  *
  * 设计原则：日记全文留在 memory/（OpenClaw 原生），
  * csb-memory 只存结构化条目（可检索、可衰减、可传播）。
+ *
+ * 重要会话判据（v1.1 协议 13.8）：
+ *   命中以下任一判据的事件，除录入结构化档案外，还会写入 RAW 底仓：
+ *   1. 拍板/决策/约定类对话（含 决定|确认|拍板|采用|共识|敲定|同意|选|定）
+ *   2. 含工具结果摘要的会话（含 评测|报告|结果|测试|验证|成功|完成|产出）
+ *   3. 情感显著波动（含 感动|震撼|重要|珍惜|难过|惊喜|难忘|突破）
+ *   4. 多 Agent 讨论/圆桌/协议组会话（含 圆桌|讨论|四人行|协议组|评审）
+ *   命中后写入 RAW（state=burning，等待 dream.js 蒸馏封口）。
  */
 
 const fs = require('fs');
 const path = require('path');
 const core = require('../lib/core/memory');
+const raw = require('../lib/raw/raw');
 
 const MEMORY_DIR = path.join(__dirname, '..', '..', 'memory');
 
@@ -96,18 +105,72 @@ function alreadySynced(dateStr) {
   return existing.some((e) => e.source === 'daily-sync' && e.tags && e.tags.includes(`day:${dateStr}`));
 }
 
+// 重要会话判据（v1.1 协议 13.8 三选一 + 多 Agent 讨论扩展）
+// 命中 → 除结构化档案外，还写入 RAW 底仓（等待 dream.js 蒸馏）
+const IMPORTANT_PATTERNS = [
+  // 判据2：拍板/决策/约定
+  /决定|确认|拍板|采用|共识|敲定|同意|选定|批准/,
+  // 判据1：含工具结果摘要（评测/报告/测试/验证/产出）
+  /评测|报告|结果|测试|验证|通过|产出|发布|上线/,
+  // 判据3：情感显著波动
+  /感动|震撼|重要|珍惜|难忘|突破|惊喜|珍贵/,
+  // 判据4（扩展）：多 Agent 讨论/圆桌/协议组
+  /圆桌|讨论|四人行|协议组|评审|会议/,
+];
+
+function isImportant(text) {
+  return IMPORTANT_PATTERNS.some((re) => re.test(text));
+}
+
+// 写入 RAW 底仓（幂等：同一内容不重复写）
+function appendToRaw(dateStr, ev, type) {
+  try {
+    const existing = raw.query(dateStr, { session: 'daily-sync' });
+    const fullContent = `[${ev.time || dateStr}] ${ev.text}`;
+    // 幂等匹配：已有流水包含完整内容或仅时间前缀不同（如 [08:00] vs [2026-08-19]）
+    if (existing.some((r) => r.content === fullContent || r.content.endsWith(ev.text))) {
+      return false; // 已存在，幂等跳过
+    }
+    raw.append({
+      ts: `${dateStr}T00:00:00.000Z`, // 按内容日期归档（而非当前时间）
+      session: 'daily-sync',
+      type: ['decision', 'milestone'].includes(type) ? type : 'conversation',
+      content: fullContent,
+      state: 'burning',
+      meta: { section: ev.section || '', important: true },
+    });
+    return true;
+  } catch (e) {
+    console.log(`  ⚠️  RAW 写入失败：${e.message}`);
+    return false;
+  }
+}
+
 function syncDate(dateStr) {
   const filePath = path.join(MEMORY_DIR, `${dateStr}.md`);
   if (!fs.existsSync(filePath)) {
     console.log(`  ⏭️  ${dateStr}.md 不存在，跳过`);
     return 0;
   }
-  if (alreadySynced(dateStr)) {
-    console.log(`  ⏭️  ${dateStr} 已同步过（幂等跳过）`);
-    return 0;
+  const synced = alreadySynced(dateStr);
+  const events = extractEvents(filePath);
+  let rawAdded = 0;
+
+  // 已同步但 RAW 可能缺失（v1.1 升级前的历史日期）→ 补写重要会话到底仓
+  if (synced) {
+    for (const ev of events) {
+      if (ev.text.length >= 8 && isImportant(ev.text)) {
+        if (appendToRaw(dateStr, ev, inferType(ev.text))) rawAdded++;
+      }
+    }
+    if (rawAdded > 0) {
+      console.log(`  🔄 ${dateStr} 已同步过，补写 ${rawAdded} 条重要会话到 RAW 底仓`);
+    } else {
+      console.log(`  ⏭️  ${dateStr} 已同步过（幂等跳过）`);
+    }
+    return rawAdded;
   }
 
-  const events = extractEvents(filePath);
   let count = 0;
   for (const ev of events) {
     if (ev.text.length < 8) continue; // 太短的碎片不录
@@ -123,6 +186,10 @@ function syncDate(dateStr) {
     try {
       core.add(entry);
       count++;
+      // 重要会话 → 同时进 RAW 底仓（v1.1 协议 13.8）
+      if (isImportant(ev.text)) {
+        appendToRaw(dateStr, ev, type);
+      }
     } catch (e) {
       console.log(`  ⚠️  录入失败：${ev.text.slice(0, 30)}… (${e.message})`);
     }

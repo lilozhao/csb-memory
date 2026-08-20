@@ -1,2 +1,4 @@
 {"timestamp":"2026-08-19T20:46:27.372+08:00","target_id":"test_1787143587216","type":"correction","old_content":"这是一条测试记忆","new_content":"修正后的内容","reason":"测试纠错","corrector":"若兰"}
 {"timestamp":"2026-08-19T20:46:27.429+08:00","target_id":"mem_mt035dg5_a8yn","type":"correction","old_content":"第三条记忆","new_content":"修正后的内容","reason":"回归测试","corrector":"若兰"}
+{"timestamp":"2026-08-19T21:01:46.090+08:00","target_id":"test_1787144505909","type":"correction","old_content":"这是一条测试记忆","new_content":"修正后的内容","reason":"测试纠错","corrector":"若兰"}
+{"timestamp":"2026-08-19T21:01:46.167+08:00","target_id":"mem_mt03p2c9_y2tg","type":"correction","old_content":"第三条记忆","new_content":"修正后的内容","reason":"回归测试","corrector":"若兰"}
