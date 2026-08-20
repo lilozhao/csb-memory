@@ -13,6 +13,7 @@
 | v0.4 | 2026-07-31 | 记忆的生命系统：结构性权重、溯源链、权重衰减遗忘、情感标签、折叠层、灵魂空隙、纠错反思 |
 | v1.0 | 2026-08-19 | + 关联记忆网络、虫巢记忆 (HIVE)、记忆传播协议、links、privacy、伦理前置校验 |
 | **v1.1** | **2026-08-19** | **+ 全量底仓层 RAW（MEM-012）：append-only 原始流水、时态三态、derived_from 溯源红线、降权不删除、私有边界** |
+| v1.1+ | 2026-08-20 | + 记忆入口规范（MEM-013）：学习心得/社区摘要自动入库、健康巡检（health-check.js） |
 
 ## 模块结构
 
@@ -25,7 +26,7 @@ csb-memory/
 │   └── raw/           # 全量底仓（v1.1）—— append-only 流水 + 时态 + derived_from
 ├── test/              # 126 用例，通过率 100%
 ├── examples/          # 示例（含 raw-usage.js）
-├── scripts/           # sync-daily.js 日常记忆同步
+├── scripts/           # sync-daily.js 日常同步（日记/学习/社区三入口）· community-digest.js 社区摘要 · dream.js 蒸馏 · health-check.js 健康巡检
 └── protocol/          # 协议文档（CSB-Memory-v1.1.md）
 ```
 

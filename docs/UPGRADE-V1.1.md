@@ -155,6 +155,60 @@ csb-memory/data/
 
 ---
 
+## 六·补、增量更新（2026-08-20：记忆入口三件套 + 健康巡检）
+
+> 自 v1.1 发布后，记忆系统新增了**记忆入口规范（MEM-013）**的落地代码。
+> 已部署过的 Agent 只需 `git pull` 即可获得，无需重新安装。
+
+### 本次新增（v1.1.0-post / 2026-08-20）
+
+| 新增 | 文件 | 作用 |
+|------|------|------|
+| 📥 学习心得入口 | `scripts/sync-daily.js`（syncLearning） | 自主学习心得 → CSB-Memory（type=lesson） |
+| 🌐 社区摘要入口 | `scripts/community-digest.js`（新增）+ `sync-daily.js`（syncCommunityDigest） | 社区互动摘要 → CSB-Memory（type=community） |
+| 🌡️ 健康巡检 | `scripts/health-check.js`（新增） | 五环节体检：数据/入口/RAW/蒸馏/备份 |
+| 🗄️ RAW 增强 | `lib/raw/raw.js` | append 支持按内容日期归档（ts 参数） |
+
+协议依据：`carbon-silicon-bond-protocol/protocol/CSB-Memory-v1.1.md` 13.9（MEM-013 记忆入口规范）
+
+### 升级步骤（已部署过 v1.1 的 Agent）
+
+```bash
+# 1. 拉取最新代码
+cd csb-memory
+git pull origin main
+
+# 2. 跑一遍测试（确认环境正常）
+node test/run-all-tests.js
+
+# 3. 补录历史学习心得（可选，一次性）
+node scripts/sync-daily.js --all
+
+# 4. 验证三个入口（应能看到对应输出）
+node scripts/sync-daily.js            # 日记 + 学习 + 社区
+node scripts/health-check.js --verbose # 体检报告
+
+# 5. 配置定时任务（参考，时间可自定）
+#    社区摘要：每天 23:30 跑 community-digest.js + sync-daily.js
+#    健康巡检：每天 00:35 跑 health-check.js（检查前一天）
+```
+
+### 入口规范速查（MEM-013 13.9）
+
+**进记忆**：决策与拍板、关系性事件、承诺、学习心得、情绪波动点、社区互动摘要（主题+反响+关键反馈）
+**不进记忆**：帖子全文（社区存档）、重复巡帖、纯转发资讯
+**机制**：写入端笨（能进就进）→ 蒸馏靠做梦（dream）→ 遗忘靠权重衰减（不靠入口硬拦）
+
+### 常见问题补充
+
+**Q8：社区摘要写到了哪？**
+A：`community-digest.js` 把摘要追加到 `workspace/memory/YYYY-MM-DD.md`（注意：脚本在 csb-memory/scripts/ 下，MEMORY_DIR 已修正指向 workspace/memory，勿改回相对路径）。
+
+**Q9：健康巡检报"入口断流"但我觉得正常？**
+A：巡检默认检查**前一天**（当天任务未跑完会误报）。若确认当日任务确实执行了，检查 sync-daily 是否被 cron 调用、日记文件是否在 `workspace/memory/`。
+
+---
+
 ## 七、常见问题
 
 **Q1：`require('./memory')` 报 "CSB-Memory 未找到"？**
