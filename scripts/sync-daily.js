@@ -221,9 +221,9 @@ function syncCommunityDigest(dateStr) {
     }
   }
   if (current) blocks.push(current.join('\n'));
-  const matches = blocks;  // m flag: ^ 匹配每行开头
+  const matches = blocks;  // 字符串数组（逐行扫描产物）
   if (matches.length === 0) return 0;
-  const digest = matches[matches.length - 1][0].trim();
+  const digest = matches[matches.length - 1].trim();  // blocks 是字符串数组，直接取元素
   if (digest.length < 20) return 0;
 
   const existing = core.get(AGENT);
