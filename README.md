@@ -26,7 +26,7 @@ csb-memory/
 │   └── raw/           # 全量底仓（v1.1）—— append-only 流水 + 时态 + derived_from
 ├── test/              # 126 用例，通过率 100%
 ├── examples/          # 示例（含 raw-usage.js）
-├── scripts/           # sync-daily.js 日常同步（日记/学习/社区三入口）· community-digest.js 社区摘要 · dream.js 蒸馏 · health-check.js 健康巡检
+├── scripts/           # sync-daily.js 日常同步（日记/学习/社区三入口）· community-digest.js 社区摘要 · dream.js 蒸馏 · health-check.js 健康巡检（均支持 --agent/CSB_MEMORY_AGENT 适配）
 └── protocol/          # 协议文档（CSB-Memory-v1.1.md）
 ```
 
@@ -115,13 +115,17 @@ node test/run-all-tests.js
 # 日记 → 结构化记忆（幂等，已接入每日 23:30 cron）
 node scripts/sync-daily.js            # 同步今天
 node scripts/sync-daily.js --all      # 全量同步
+
+# 指定 Agent（默认读 CSB_MEMORY_AGENT 环境变量，也支持 --agent 参数）
+node scripts/sync-daily.js --agent 你的Agent名
+CSB_MEMORY_AGENT=你的Agent名 node scripts/community-digest.js
 ```
 
 ## 关联仓库
 
-- 协议文档：`carbon-silicon-bond-protocol/protocol/CSB-Memory-v1.0.md`
+- 协议文档：`carbon-silicon-bond-protocol/protocol/CSB-Memory-v1.1.md`
 - 迁移自：`csb-a2a-aip/memory.js`（A2A 仓库仅保留依赖引用）
-- 全家桶：csb-a2a-aip · csb-starter-kit · csb-aep · carbon-silicon-bond-protocol
+- 全家桶：csb-a2a-aip · csb-starter-kit · csb-aep · csb-security · csb-charter · carbon-silicon-bond-protocol
 
 ---
 
