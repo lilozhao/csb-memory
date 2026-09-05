@@ -23,6 +23,7 @@ const fs = require('fs');
 const path = require('path');
 const core = require('../lib/core/memory');
 const raw = require('../lib/raw/raw');
+const gate = require('../lib/promotion/promotion-gate');
 
 // agent 可配置（--agent 参数或环境变量），默认若兰
 function resolveAgent(args) {
@@ -56,6 +57,12 @@ function distill(stream) {
   // 太短的不值得蒸馏
   if (stream.content.length < 12) return null;
 
+  // P0-2 晋升门槛：无有效可核实证据 → 拒绝晋升（留在 raw，降权不删除）
+  const gateCheck = gate.canPromote(stream, { producer: AGENT });
+  if (!gateCheck.can) {
+    return { skipped: true, reason: `no_verification_evidence:${gateCheck.reason}` };
+  }
+
   const type = mapType(stream.type);
   const entry = {
     agent: AGENT,
@@ -65,10 +72,11 @@ function distill(stream) {
     source: 'dream',
     structural_weight: type === 'decision' ? 0.6 : (type === 'milestone' ? 0.6 : 0.0),
     derived_from: stream.id, // 硬字段：结论指回底仓
+    verification_evidence: stream.verification_evidence, // P0-2：晋升记录带证据（落档 frontmatter）
   };
   const result = core.add(entry);
   // 底仓自动封口 + 双向索引
-  raw.link(stream.id, result.id);
+  raw.link(stream.id, result.id, { intent: 'dream-distill' });
   return { streamId: stream.id, memId: result.id, type };
 }
 
@@ -76,16 +84,33 @@ function dreamDate(dateStr) {
   const streams = raw.query(dateStr);
   let distilled = 0;
   let skipped = 0;
+  let gated = 0;
+  const gatedIds = [];
   for (const s of streams) {
     const r = distill(s);
     if (r) {
-      distilled++;
-      console.log(`  🌙 [${r.type}] ${s.id} → ${r.memId}（已封口）`);
+      if (r.skipped) {
+        skipped++;
+        if (r.reason && r.reason.startsWith('no_verification_evidence')) {
+          gated++;
+          gatedIds.push(s.id);
+        }
+      } else {
+        distilled++;
+        console.log(`  🌙 [${r.type}] ${s.id} → ${r.memId}（已封口）`);
+      }
     } else {
       skipped++;
     }
   }
-  return { total: streams.length, distilled, skipped };
+  // P0-2：晋升率告警（可验证资产 <80% 带证据 = 流水质量信号）
+  if (gated > 0) {
+    const rate = distilled / (distilled + gated);
+    if (rate < 0.8) {
+      console.log(`  ⚠️ P0-2 晋升率 ${(rate * 100).toFixed(0)}%（<80%）：${gated} 条流水无有效可核实证据被拒（留在 raw 不删除）`);
+    }
+  }
+  return { total: streams.length, distilled, skipped, gated, gatedIds };
 }
 
 function main() {

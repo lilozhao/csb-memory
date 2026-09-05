@@ -16,7 +16,8 @@ const tests = [
   { name: 'hive.js (v1.0)', file: 'test-hive.js' },
   { name: 'propagation.js (v1.0)', file: 'test-propagation.js' },
   { name: 'raw.js (v1.1)', file: 'test-raw.js' },
-  { name: 'evolution.js (P0-4)', file: 'test-evolution.js' }
+  { name: 'evolution.js (P0-4)', file: 'test-evolution.js' },
+  { name: 'promotion-gate.js (P0-2)', file: 'test-promotion.js' }
 ];
 
 async function runAllTests() {

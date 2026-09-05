@@ -139,6 +139,13 @@ function appendToRaw(dateStr, ev, type) {
       content: fullContent,
       state: 'burning',
       meta: { section: ev.section || '', important: true },
+      // P0-2：机器写入自动挂 source_trace 证据（来源可回查，非自评）
+      verification_evidence: {
+        type: 'source_trace',
+        detail: `daily-sync 入库（源：${ev.section || 'daily-memory'} · ${dateStr}）`,
+        verified_by: 'csb-memory-sync',
+        verified_at: new Date().toISOString(),
+      },
     });
     return true;
   } catch (e) {
