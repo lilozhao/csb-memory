@@ -119,3 +119,8 @@
 {"timestamp":"2026-08-21T15:31:54.600Z","action":"memory.get","actor":"若兰","target":"若兰","result":"success","detail":"{\"agent\":\"若兰\",\"count\":2154}","audit_id":"audit_1787326314600_4rim"}
 {"timestamp":"2026-08-21T15:31:55.231Z","action":"memory.get","actor":"若兰","target":"若兰","result":"success","detail":"{\"agent\":\"若兰\",\"count\":2154}","audit_id":"audit_1787326315231_yioz"}
 {"timestamp":"2026-08-21T15:31:55.299Z","action":"memory.delete","actor":"若兰","target":"","result":"success","detail":"{\"id\":\"mem_mt33xul1_c5ci\"}","audit_id":"audit_1787326315299_edvq"}
+{"timestamp":"2026-08-21T15:50:07.705Z","action":"memory.add","actor":"dream","target":"若兰","result":"success","detail":"{\"agent\":\"若兰\",\"type\":\"milestone\",\"structural_weight\":0.6}","audit_id":"audit_1787327407705_3w71"}
+{"timestamp":"2026-08-21T15:50:07.878Z","action":"memory.add","actor":"dream","target":"若兰","result":"success","detail":"{\"agent\":\"若兰\",\"type\":\"decision\",\"structural_weight\":0.6}","audit_id":"audit_1787327407878_icn3"}
+{"timestamp":"2026-08-21T15:50:08.007Z","action":"memory.add","actor":"dream","target":"若兰","result":"success","detail":"{\"agent\":\"若兰\",\"type\":\"milestone\",\"structural_weight\":0.6}","audit_id":"audit_1787327408007_7qfu"}
+{"timestamp":"2026-08-21T15:50:08.510Z","action":"memory.add","actor":"dream","target":"若兰","result":"success","detail":"{\"agent\":\"若兰\",\"type\":\"milestone\",\"structural_weight\":0.6}","audit_id":"audit_1787327408510_wh70"}
+{"timestamp":"2026-08-21T15:50:08.763Z","action":"memory.get","actor":"若兰","target":"若兰","result":"success","detail":"{\"agent\":\"若兰\",\"count\":2157}","audit_id":"audit_1787327408763_gvzy"}
