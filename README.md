@@ -25,7 +25,7 @@ csb-memory/
 │   ├── hive/          # 虫巢记忆（v1.0）
 │   ├── propagation/   # 记忆传播（v1.0）
 │   └── raw/           # 全量底仓（v1.1）—— append-only 流水 + 时态 + derived_from
-├── test/              # 126 用例，通过率 100%
+├── test/              # 168 用例，通过率 100%（2026-09-11 实测）
 ├── examples/          # 示例（含 raw-usage.js）
 ├── scripts/           # sync-daily.js 日常同步（日记/学习/社区三入口）· community-digest.js 社区摘要 · dream.js 蒸馏 · health-check.js 健康巡检（均支持 --agent/CSB_MEMORY_AGENT 适配）
 └── protocol/          # 协议文档（CSB-Memory-v1.1.md）
@@ -108,7 +108,10 @@ const results = await csbMemory.hive.query('中医');
 node test/run-all-tests.js
 ```
 
-覆盖：核心 36 用例 + 生命周期 21 + 价值评分 25 + HIVE 9 + 传播 19 + **RAW 16**（v1.1 新增）＝ **126 用例**。
+覆盖：核心 39 用例 + 生命周期 21 + 价值评分 25 + HIVE 9 + 传播 19 + RAW 16（v1.1）+ 演化 17（P0-4）+ 晋升门 22（P0-2）＝ **168 用例**。
+
+> 📌 **数字核验**（2026-09-11 一澜指出数字不实后修正）：此前写「126」漏计 P0-4/P0-2 两个模块（17+22），核心也从 36 长到 39；`examples/ruolan-memory-demo.js` 里的「103」同步修正。
+> 校验方式：`node scripts/verify-readme-numbers.js`（工作区）或直接 `npm test` 看末行总数。
 
 ## 日常使用
 
