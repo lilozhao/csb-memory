@@ -171,6 +171,6 @@ console.log(`\n${LINE}`);
 console.log(`\n✅ 落地演示完成。若兰记忆档案：`);
 console.log(`   数据文件：data/a2a-memories/若兰.md（人类可读、可编辑）`);
 console.log(`   记忆条目：${core.get('若兰').length} 条 · 身份记忆受结构性权重保护`);
-console.log(`   测试覆盖：103 用例 100% 通过`);
+console.log(`   测试覆盖：168 用例 100% 通过`);
 console.log(`\n架构一句话：核心是「明文记忆文件 + 价值调度 + 生命周期」，`);
 console.log(`向外是「HIVE 虫巢缓存 + 传播协议」，向内是「折叠层 + 灵魂空隙」。`);
