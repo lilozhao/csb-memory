@@ -3,3 +3,6 @@ data/a2a-memories/*.md
 data/audit/*.jsonl
 data/hive/*.json
 data/raw/*.jsonl
+data/audit/*.log
+data/corrections.jsonl
+data/audit/audit-*.log
