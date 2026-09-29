@@ -34,7 +34,9 @@ const BACKUP_LOG = path.join(MEMORY_DIR, 'backup.log');
 function resolveAgent(args) {
   const idx = args.indexOf('--agent');
   if (idx >= 0 && args[idx + 1] && !args[idx + 1].startsWith('--')) return args[idx + 1];
-  return process.env.CSB_MEMORY_AGENT || '若兰';
+  const v = process.env.CSB_MEMORY_AGENT;
+  if (!v) { console.error('❌ 未指定目标 Agent：请用 --agent <名字> 或环境变量 CSB_MEMORY_AGENT（禁止静默默认）'); process.exit(2); }
+  return v;
 }
 const AGENT = resolveAgent(process.argv.slice(2));
 

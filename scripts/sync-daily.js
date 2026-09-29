@@ -8,6 +8,11 @@
  *   node scripts/sync-daily.js [日期，默认今天]
  *   node scripts/sync-daily.js --all          # 全量导入（幂等，按日期去重）
  *   node scripts/sync-daily.js --agent 阿轩    # 指定 agent（默认若兰）
+ *   node scripts/sync-daily.js --allow-missing # 缺失日记属预期时显式豁免（rc=0，不打告警）
+ *
+ * ⚠️ 案例（2026-09-24~28）：日记源文件缺失时旧行为只打印「⏭️ 不存在，跳过」并 rc=0，
+ *   叠加 cron delivery.mode=none ⇒ 连续 5 天断供而系统天天报 ok（假绿）。
+ *   现行为：单日期模式下源缺失 ⇒ 🚨 告警块 + 退出码 3（非 0 才能被 cron/CI 感知）。
  *
  * 设计原则：日记全文留在 memory/（OpenClaw 原生），
  * csb-memory 只存结构化条目（可检索、可衰减、可传播）。
@@ -33,9 +38,12 @@ const LEARNING_DIR = path.join(MEMORY_DIR, 'learning');
 function resolveAgent(args) {
   const idx = args.indexOf('--agent');
   if (idx >= 0 && args[idx + 1]) return args[idx + 1];
-  return process.env.CSB_MEMORY_AGENT || '若兰';
+  const v = process.env.CSB_MEMORY_AGENT;
+  if (!v) { console.error('❌ 未指定目标 Agent：请用 --agent <名字> 或环境变量 CSB_MEMORY_AGENT（禁止静默默认）'); process.exit(2); }
+  return v;
 }
 const AGENT = resolveAgent(process.argv.slice(2));
+const ALLOW_MISSING = process.argv.slice(2).includes('--allow-missing');
 
 // 类型推断：关键词 → 记忆类型
 function inferType(text) {
@@ -266,7 +274,15 @@ function syncCommunityDigest(dateStr) {
 function syncDate(dateStr) {
   const filePath = path.join(MEMORY_DIR, `${dateStr}.md`);
   if (!fs.existsSync(filePath)) {
-    console.log(`  ⏭️  ${dateStr}.md 不存在，跳过`);
+    if (ALLOW_MISSING) {
+      console.log(`  ⏭️  ${dateStr}.md 不存在 —— 已显式豁免（--allow-missing），非已同步`);
+      return 0;
+    }
+    console.log(`  🚨 断供告警：日记源文件缺失 —— ${dateStr}.md 不存在，本次未同步（≠ 已同步）`);
+    console.log(`     路径：${filePath}`);
+    console.log(`     后果：该日 0 条新增（结构化档案不会增长；RAW 底仓无该日数据）`);
+    console.log(`     处置：补齐日记后重跑；若该日确实无日记，用 --allow-missing 显式豁免`);
+    process.exitCode = 3;
     return 0;
   }
   const synced = alreadySynced(dateStr);

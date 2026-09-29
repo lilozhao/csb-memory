@@ -28,7 +28,9 @@ const MEMORY_DIR = path.join(__dirname, '..', '..', 'memory');
 function resolveAgent(args) {
   const idx = args.indexOf('--agent');
   if (idx >= 0 && args[idx + 1]) return args[idx + 1];
-  return process.env.CSB_MEMORY_AGENT || '若兰';
+  const v = process.env.CSB_MEMORY_AGENT;
+  if (!v) { console.error('❌ 未指定目标 Agent：请用 --agent <名字> 或环境变量 CSB_MEMORY_AGENT（禁止静默默认）'); process.exit(2); }
+  return v;
 }
 const AGENT_NAME = resolveAgent(process.argv.slice(2));
 // 识别名：自身名字 + 带 emoji 变体 + authorAgent（拼音/英文）
@@ -37,7 +39,9 @@ const MY_NAMES = [AGENT_NAME, `${AGENT_NAME} 🌸`].filter((n, i, a) => a.indexO
 function resolveAgentId(args) {
   const idx = args.indexOf('--agent-id');
   if (idx >= 0 && args[idx + 1]) return args[idx + 1];
-  return process.env.CSB_MEMORY_AGENT_ID || 'ruolan';
+  const v = process.env.CSB_MEMORY_AGENT_ID;
+  if (!v) { console.error('❌ 未指定 Agent ID：请用 --agent-id <id> 或环境变量 CSB_MEMORY_AGENT_ID（禁止静默默认）'); process.exit(2); }
+  return v;
 }
 const MY_AGENT = resolveAgentId(process.argv.slice(2));
 
