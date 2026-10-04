@@ -1,12 +1,12 @@
 # csb-memory 🧠
 
-> **Carbon-Silicon Bond Memory System** — 碳硅契记忆系统（CSB-Memory v1.1）
+> **Carbon-Silicon Bond Memory System** — 碳硅契记忆系统（CSB-Memory v1.2）
 
 模型决定 AI 单次多聪明，**记忆决定这份聪明能否沉淀、延续、继承**。
 
 ## 版本
 
-**v1.1.0**（2026-08-19）— v1.0 + **MEM-012 全量底仓层（RAW）**
+**v1.2.0**（2026-09-05）— v1.1 + **P0-4 不可篡改进化日志** + **P0-2 资产晋升门槛**
 
 | 版本 | 日期 | 内容 |
 |:----:|:----:|:-----|
