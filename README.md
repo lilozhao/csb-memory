@@ -27,7 +27,7 @@ csb-memory/
 │   └── raw/           # 全量底仓（v1.1）—— append-only 流水 + 时态 + derived_from
 ├── test/              # 168 用例，通过率 100%（2026-09-11 实测）
 ├── examples/          # 示例（含 raw-usage.js）
-├── scripts/           # sync-daily.js 日常同步（日记/学习/社区三入口）· community-digest.js 社区摘要 · dream.js 蒸馏 · health-check.js 健康巡检（均支持 --agent/CSB_MEMORY_AGENT 适配）
+├── scripts/           # sync-daily.js 日常同步（日记/学习/社区三入口）· sync-session.js 会话原文采集（主会话覆盖，A7 修复件）· community-digest.js 社区摘要 · dream.js 蒸馏 · health-check.js 健康巡检（均支持 --agent/CSB_MEMORY_AGENT 适配）
 └── protocol/          # 协议文档（CSB-Memory-v1.1.md）
 ```
 
@@ -122,6 +122,10 @@ node scripts/sync-daily.js --all      # 全量同步
 
 # 指定 Agent（默认读 CSB_MEMORY_AGENT 环境变量，也支持 --agent 参数）
 node scripts/sync-daily.js --agent 你的Agent名
+
+# 会话原文采集（补主会话覆盖 → RAW 底仓）
+node scripts/sync-session.js --agent 你的Agent名 --days 2   # 最近 2 天
+node scripts/sync-session.js --all                          # 全量
 CSB_MEMORY_AGENT=你的Agent名 node scripts/community-digest.js
 ```
 
