@@ -1,7 +1,7 @@
 ---
 spec_id: SPEC-MEM-0001
 title: 记忆条目落 BID 关系信号字段（一期）
-status: approved
+status: done
 level: M
 version: 1.0
 repo: csb-memory
@@ -55,16 +55,16 @@ W-12 BID 概念验证（`csb-aep/docs/bid-poc-readout-v1.md`）证伪了「现�
 
 ## 验收
 
-- [ ] A1 → R1：`node test/bid-signal.test.js` 断言三类信号词各命中一条，front-matter 含 `bid_signal` 块
-- [ ] A2 → R2：调 `core.add({peer:'阿轩',content:'…更正…'})`，断言 front-matter 的 `peer` 等于 `'阿轩'`
-- [ ] A3 → R3：条目含连接名（在 tags 与正文各一），断言 `peer` 取到该名
-- [ ] A4 → R4：mock 无连接名的条目，断言 `peer` 为 `null`
-- [ ] A5 → R5：mock 我方更正与对方更正各一条，断言 `direction` 分别 `out` / `in`
-- [ ] A6 → R6：断言一期写入的 `state` 恒为 `pending`
-- [ ] A7 → R7：mock 无信号条目，断言无 `bid_signal` 字段
-- [ ] A8 → R8：对存量无字段条目 `get()` 不抛错
-- [ ] A9 → R9：回归断言既有字段（id/type/timestamp/...）在带与不带 `bid_signal` 两种情况下一致
-- [ ] A10 → 背景：`README.md` 与架构文档随提交同步（代码与文档同步规则）
+- [x] A1 → R1：`node test/bid-signal.test.js` 断言三类信号词各命中一条，front-matter 含 `bid_signal` 块
+- [x] A2 → R2：调 `core.add({peer:'阿轩',content:'…更正…'})`，断言 front-matter 的 `peer` 等于 `'阿轩'`
+- [x] A3 → R3：条目含连接名（在 tags 与正文各一），断言 `peer` 取到该名
+- [x] A4 → R4：mock 无连接名的条目，断言 `peer` 为 `null`
+- [x] A5 → R5：mock 我方更正与对方更正各一条，断言 `direction` 分别 `out` / `in`
+- [x] A6 → R6：断言一期写入的 `state` 恒为 `pending`
+- [x] A7 → R7：mock 无信号条目，断言无 `bid_signal` 字段
+- [x] A8 → R8：对存量无字段条目 `get()` 不抛错
+- [x] A9 → R9：回归断言既有字段（id/type/timestamp/...）在带与不带 `bid_signal` 两种情况下一致
+- [x] A10 → 背景：`README.md` 与架构文档随提交同步（代码与文档同步规则）
 
 ## 待澄清 ⚠️
 

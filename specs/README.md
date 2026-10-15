@@ -9,4 +9,4 @@
 
 | SPEC-ID | 标题 | 级别 | 状态 | 负责 |
 |---|---|---|---|---|
-| [SPEC-MEM-0001](./SPEC-MEM-0001/spec.md) | 记忆条目落 BID 关系信号字段（一期） | M | approved | 若兰 |
+| [SPEC-MEM-0001](./SPEC-MEM-0001/spec.md) | 记忆条目落 BID 关系信号字段（一期） | M | done | 若兰 |
