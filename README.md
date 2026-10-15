@@ -21,11 +21,12 @@
 ```
 csb-memory/
 ├── lib/
-│   ├── core/          # 本地记忆核心（自 csb-a2a-aip 迁移）
+│   ├── core/          # 本地记忆核心（自 csb-a2a-aip 迁移）+ bid-signal.js（关系信号抽取 · SPEC-MEM-0001）
 │   ├── hive/          # 虫巢记忆（v1.0）
 │   ├── propagation/   # 记忆传播（v1.0）
 │   └── raw/           # 全量底仓（v1.1）—— append-only 流水 + 时态 + derived_from
-├── test/              # 168 用例，通过率 100%（2026-09-11 实测）
+├── test/              # 179 用例，通过率 100%（2026-10-15 实测）
+├── specs/             # SPEC-MEM-0001（记忆条目落 BID 关系信号字段 · 一期 · approved）
 ├── examples/          # 示例（含 raw-usage.js）
 ├── scripts/           # sync-daily.js 日常同步（日记/学习/社区三入口）· sync-session.js 会话原文采集（主会话覆盖，A7 修复件）· community-digest.js 社区摘要 · dream.js 蒸馏 · health-check.js 健康巡检（均支持 --agent/CSB_MEMORY_AGENT 适配）
 └── protocol/          # 协议文档（CSB-Memory-v1.1.md）

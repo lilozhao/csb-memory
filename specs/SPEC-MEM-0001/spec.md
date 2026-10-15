@@ -1,7 +1,7 @@
 ---
 spec_id: SPEC-MEM-0001
 title: 记忆条目落 BID 关系信号字段（一期）
-status: draft
+status: approved
 level: M
 version: 1.0
 repo: csb-memory
@@ -28,12 +28,17 @@ W-12 BID 概念验证（`csb-aep/docs/bid-poc-readout-v1.md`）证伪了「现�
 
 分级依据：单仓（csb-memory）、仅新增可选字段、不触协议/安全/身份/契约、向后兼容 → **M 级**。
 
+**生产者事实核定（2026-10-15）**：`data/a2a-memories/*.md` 这个 YAML 仓由
+`core.add()` 写入，调用方＝ `sync-daily.js`（日记）、`sync-session.js`（会话原文）、`dream.js`（蒸馏）。
+注：`csb-a2a-aip/a2a-memory.js#processConversation` 写的是**另一个 DB 型仓**（`## 📅` 追加式），
+不在本 spec 范围（若要同步覆盖需另开 spec）。
+
 ## 需求
 
 - **R1** [WHEN] 记忆条目正文命中 BID 信号词表（承诺 / 纠错 / 决策三类之一）时，系统 SHALL 在该条 front-matter 写入 `bid_signal` 块（含 `kind` / `peer` / `direction` / `state` 四字段）
-- **R2** [WHERE] 条目由 A2A 对话生成（`a2a-memory.js#processConversation`）时，`bid_signal.peer` SHALL 取该次对话的 `agentName`
-- **R3** [WHERE] 条目由日记同步生成（`sync-daily.js`）时，`bid_signal.peer` SHALL 取从条目正文或 tags 提取到的连接名
-- **R4** [IF] 日记同步提取不到连接名时，`bid_signal.peer` SHALL 取 `null`
+- **R2** [WHERE] 记忆条目由生产者（`sync-daily.js` / `sync-session.js` / `dream.js`，均经 `core.add`）写入时，`bid_signal.peer` SHALL 优先取调用方显式传入的 `peer`
+- **R3** [IF] 调用方未传 `peer` 时，`bid_signal.peer` SHALL 从条目 `tags` 或正文提取连接名
+- **R4** [IF] `tags` 与正文均提取不到连接名时，`bid_signal.peer` SHALL 取 `null`
 - **R5** [WHEN] 信号为纠错且方向可判时，`bid_signal.direction` SHALL 取 `out`（我方发出更正）或 `in`（对方更正我方）
 - **R6** [UBIQUITOUS] 一期 `bid_signal.state` SHALL 固定为 `pending`（承诺四态回填留待二期）
 - **R7** [IF] 条目未命中任何 BID 信号词，系统 SHALL 不写入 `bid_signal` 字段
@@ -51,9 +56,9 @@ W-12 BID 概念验证（`csb-aep/docs/bid-poc-readout-v1.md`）证伪了「现�
 ## 验收
 
 - [ ] A1 → R1：`node test/bid-signal.test.js` 断言三类信号词各命中一条，front-matter 含 `bid_signal` 块
-- [ ] A2 → R2：mock A2A 对话条目，断言 `peer` 等于传入 `agentName`
-- [ ] A3 → R3：mock 含连接名的日记同步条目，断言 `peer` 取到该名
-- [ ] A4 → R4：mock 不含连接名的日记同步条目，断言 `peer` 为 `null`
+- [ ] A2 → R2：调 `core.add({peer:'阿轩',content:'…更正…'})`，断言 front-matter 的 `peer` 等于 `'阿轩'`
+- [ ] A3 → R3：条目含连接名（在 tags 与正文各一），断言 `peer` 取到该名
+- [ ] A4 → R4：mock 无连接名的条目，断言 `peer` 为 `null`
 - [ ] A5 → R5：mock 我方更正与对方更正各一条，断言 `direction` 分别 `out` / `in`
 - [ ] A6 → R6：断言一期写入的 `state` 恒为 `pending`
 - [ ] A7 → R7：mock 无信号条目，断言无 `bid_signal` 字段
@@ -63,4 +68,4 @@ W-12 BID 概念验证（`csb-aep/docs/bid-poc-readout-v1.md`）证伪了「现�
 
 ## 待澄清 ⚠️
 
-- Q1：`peer` 提取的词表是否与反抽原型 `csb-aep/scripts/bid-signal-from-memory.js` 完全同源？（默认：同源，实现时抽为共享受测常量）
+无（Q1「词表是否与反抽原型同源」已由一澜 2026-10-15 12:04 确认：同源；实现时抽为共享常量 `lib/core/bid-signal.js`）
