@@ -1,7 +1,7 @@
 ---
 spec_id: SPEC-MEM-0002
 title: 承诺四态回填 + 存量信号反抽（二期）
-status: draft
+status: done
 level: M
 version: 1.0
 repo: csb-memory
@@ -12,8 +12,8 @@ reviewers: [一澜]
 base: main
 supersedes: null
 created: 2026-10-15
-updated: 2026-10-15
-notes: "SPEC-MEM-0001 的续期；一期只落字段（state 恒 pending），本 spec 做四态回填 + 存量 1100 条反抽"
+updated: 2026-10-18
+notes: "**2026-10-18 实现完成 → done**：A1-A10 全勾（测试 19/19，含 3 组锚定反例）· 全量 198/198 · 真机预览：promise 12 条 / 变更 0（无锚不改判·正确结果）· 存量反抽可补 761 条。**二期 approved（2026-10-18 · 一澜放行·直接开工）**：一期观察结束，一澜定「直接开始二期」，M 级单仓、按放行即 approved + 开工。SPEC-MEM-0001 的续期；一期只落字段（state 恒 pending），本 spec 做四态回填 + 存量 1100 条反抽"
 ---
 
 ## 背景与目标
@@ -53,16 +53,32 @@ SPEC-MEM-0001（一期，已 done）在记忆生成过程落了可选 `bid_signa
 
 ## 验收
 
-- [ ] A1 → R1：造 3 条 `pending` promise 条目，跑回填，断言仅 promise 类被扫
-- [ ] A2 → R2：mock 一条有对应 task `COMPLETED` 锚的条目，断言 state→`fulfilled`
-- [ ] A3 → R3：mock 一条带过期时限且无锚的条目，断言 state→`overdue`
-- [ ] A4 → R4：mock 一条带撤回证据的条目，断言 state→`withdrawn`
-- [ ] A5 → R5：mock 一条无任何锚的条目，断言 state 保持 `pending`
-- [ ] A6 → R6：连跑两次，断言第二次零变更（幂等）
-- [ ] A7 → R7：造带连接名的历史条目（无字段），跑反抽，断言补落 `bid_signal`
-- [ ] A8 → R8：断言反抽条目含 `bid_signal.origin=backfill`
-- [ ] A9 → R9：断言回填前后条目总数不变（不删除）
-- [ ] A10 → R10：断言 state 变更产生 audit 记录且含旧值→新值与锚引用
+- [x] A1 → R1：造 3 条 `pending` promise 条目，跑回填，断言仅 promise 类被扫
+- [x] A2 → R2：mock 一条有对应 task `COMPLETED` 锚的条目，断言 state→`fulfilled`
+- [x] A3 → R3：mock 一条带过期时限且无锚的条目，断言 state→`overdue`
+- [x] A4 → R4：mock 一条带撤回证据的条目，断言 state→`withdrawn`
+- [x] A5 → R5：mock 一条无任何锚的条目，断言 state 保持 `pending`
+- [x] A6 → R6：连跑两次，断言第二次零变更（幂等）
+- [x] A7 → R7：造带连接名的历史条目（无字段），跑反抽，断言补落 `bid_signal`
+- [x] A8 → R8：断言反抽条目含 `bid_signal.origin=backfill`
+- [x] A9 → R9：断言回填前后条目总数不变（不删除）
+- [x] A10 → R10：断言 state 变更产生 audit 记录且含旧值→新值与锚引用
+
+## 实现记录（2026-10-18）
+
+| 件 | 路径 |
+|---|---|
+| 引擎 | `lib/core/bid-state.js`（backfill 四态回填 · resigil 存量反抽） |
+| CLI | `scripts/bid-state.js`（`backfill [--dry] [--window N] [--now ISO]` · `resigil [--dry]` · `stats`） |
+| 测试 | `test/bid-state.test.js`（A1-A10 + A2b/c/d 锚定反例 · 19/19） |
+
+匹配口径（保守，宁漏勿错）：
+- 完成锚仅认**完成类动作**（`spec.done`/`task.*`/`code.patch`/`doc.update` 等），`spec.approve` 等批准语义不算
+- 锚时间必须 **≥ 承诺时间**
+- 正文与锚的 target/reason 需共享 ≥4 字实体词（停用词剔除）
+- 取不到锚一律保持 pending（BR-12）
+
+真机读数：promise 条目 12 · 命中锚 0 · 反抽可补 761 条（decision 467 / promise 203 / correction 91）。
 
 ## 待澄清 ⚠️
 
