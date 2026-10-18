@@ -290,6 +290,23 @@ const funnel = bs.thresholdFunnel([
 ok('O4 漏斗统计正确', funnel.total === 3 && funnel.passed === 1 && funnel.blocked === 2, JSON.stringify(funnel));
 ok('O4 挡率 >50% 触发复审', funnel.reviewTriggered === true, `ratio=${funnel.blockedRatio}`);
 
+
+// ── O5 → direction 增强 ──
+ok('O5 我方复核更正 → out', bid.signalOf({ content: '若兰复核更正：口径有差异' }).direction === 'out');
+ok('O5 我方校正 → out', bid.signalOf({ content: '勘真回执 + 我方校正（重要）' }).direction === 'out');
+ok('O5 第一人称认错 → out', bid.signalOf({ content: '我说错了，接口名写反了' }).direction === 'out');
+ok('O5 对方主动更正 → in', bid.signalOf({ content: '墨丘主动更正：数据源有误' }).direction === 'in');
+ok('O5 采纳指正 → in', bid.signalOf({ content: '采纳墨丘指正' }).direction === 'in');
+ok('O5 已知连接名指出我方 → in', bid.signalOf({ content: '阿轩指出我方口径有误' }).direction === 'in');
+ok('O5 无主语更正 → 仍 null（不猜）', bid.signalOf({ content: '更正：早报日期有误' }).direction === null);
+
+// ── O7 → 上下文窗口 ──
+const es = [{ content: '甲' }, { content: '乙' }, { content: '丙' }];
+ok('O7 window=0 只取本条', bs.buildContextText(es, 1, 0) === '乙');
+ok('O7 window=1 取前后各一', bs.buildContextText(es, 1, 1) === '甲 乙 丙');
+ok('O7 边界不越界', bs.buildContextText(es, 0, 1) === '甲 乙');
+ok('O7 默认关闭（window 缺省=1 需显式传）', bs.buildContextText(es, 1) === '甲 乙 丙');
+
 reset();
 
 // ── 收尾 ──
