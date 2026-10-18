@@ -19,7 +19,8 @@ const tests = [
   { name: 'evolution.js (P0-4)', file: 'test-evolution.js' },
   { name: 'promotion-gate.js (P0-2)', file: 'test-promotion.js' },
   { name: 'bid-signal.js (SPEC-MEM-0001)', file: 'bid-signal.test.js' },
-  { name: 'bid-state.js (SPEC-MEM-0002)', file: 'bid-state.test.js' }
+  { name: 'bid-state.js (SPEC-MEM-0002)', file: 'bid-state.test.js' },
+  { name: 'bid-connection.js (O6-S1)', file: 'bid-connection.test.js' }
 ];
 
 async function runAllTests() {
