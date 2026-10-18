@@ -5,6 +5,8 @@
  * 用法：
  *   node scripts/bid-state.js backfill [--dry] [--window 90] [--now ISO]
  *   node scripts/bid-state.js resigil  [--dry] [--kinds promise,correction]
+ *   node scripts/bid-state.js rescore  [--dry]        # O1 存量重判（v2.0 对齐）
+ *   node scripts/bid-state.js dups     [--min N]      # O3 重复正文报告（只读）
  *   node scripts/bid-state.js stats
  *
  * 纪律：默认只读预览（--dry 可省，本 CLI **默认真实写入**——与一期 sync 脚本一致；
@@ -54,6 +56,26 @@ switch (cmd) {
     const kinds = kindsArg ? kindsArg.split(',').map(s => s.trim()).filter(Boolean) : null;
     const r = bs.resigil({ dryRun, kinds });
     printResigil(r);
+    process.exit(0);
+  }
+  case 'rescore': {
+    const r = bs.rescore({ dryRun });
+    console.log(`══ 存量重判${dryRun ? '（预览）' : ''} ══`);
+    console.log(`扫描带信号条目=${r.scanned}`);
+    console.log(`  摘除误报=${r.removed} · 类别变更=${r.rekinded} · 保持=${r.kept}`);
+    for (const c of r.changes.slice(0, 25)) {
+      console.log(`  ${c.action === 'removed' ? '🗑 ' : '↻ '}${c.agent}#${c.id} · ${c.from}${c.to ? '→' + c.to : ''}`);
+    }
+    if (r.changes.length > 25) console.log(`  … 另 ${r.changes.length - 25} 条`);
+    process.exit(0);
+  }
+  case 'dups': {
+    const r = bs.findDuplicateTexts({ minCount: parseInt(arg('--min', '2'), 10) });
+    console.log('══ 重复正文报告 ══');
+    console.log(`条目总数=${r.total} · 重复组=${r.dupGroups} · 牵涉条目=${r.dupEntries}`);
+    for (const g of r.groups.slice(0, 15)) {
+      console.log(`  ×${g.count} [${g.agent}] ${g.sample}${g.withSignal ? ` (含信号 ${g.withSignal})` : ''}`);
+    }
     process.exit(0);
   }
   case 'stats':

@@ -228,6 +228,70 @@ r = bs.backfill({ memoryDir: MEM, ledgerPath: LED, now: NOW });
 ok('A4b 列表语境 ⛔ 不判 withdrawn', r.byState.withdrawn === 0, JSON.stringify(r.byState));
 ok('A4b 该条保持 pending', r.byState.pending === 1, JSON.stringify(r.byState));
 
+
+// ═══════════ P0 优化验收（O1–O4 · 2026-10-18）════════════
+
+// ── O1 → rescore：存量重判 ──
+reset();
+writeAgent('o1', [
+  // 误报：含"承诺"但实为谈论 → v2.0 不认
+  entry({ id: 'o1-bad', timestamp: '2026-10-10T00:00:00Z', content: '讨论一下承诺履约率怎么算', sig: P() }),
+  // 真信号：v2.0 仍认
+  entry({ id: 'o1-good', timestamp: '2026-10-10T00:00:00Z', content: '我承诺明天完成这件事', sig: P() }),
+]);
+let ro = bs.rescore({ memoryDir: MEM });
+ok('O1 误报被摘除', ro.removed === 1, JSON.stringify({ removed: ro.removed, kept: ro.kept }));
+ok('O1 真信号保留', ro.kept === 1, JSON.stringify(ro));
+const o1text = fs.readFileSync(path.join(MEM, 'o1.md'), 'utf8');
+ok('O1 摘除后文件不再含该条 bid_signal', !/o1-bad[\s\S]{0,400}bid_signal/.test(o1text));
+ok('O1 条目本身未被删除', (o1text.match(/^id: /gm) || []).length === 2);
+// 幂等
+const ro2 = bs.rescore({ memoryDir: MEM });
+ok('O1 重跑零变更（幂等）', ro2.removed === 0 && ro2.rekinded === 0, JSON.stringify(ro2));
+
+// ── O2 → peer 收紧 ──
+const bid = require('../lib/core/bid-signal');
+ok('O2 关系位置「与X」认作 peer', bid.extractPeer({ content: '与阿轩确认了接口对齐方案' }) === '阿轩');
+ok('O2 主语位置「X主动」认作 peer', bid.extractPeer({ content: '墨丘主动更正：数据源有误' }) === '墨丘');
+ok('O2 纯提及不认作 peer', bid.extractPeer({ content: '来源链条：若琢 09-01 回帖承诺 → 增补' }) === null);
+ok('O2 无名字 → null', bid.extractPeer({ content: '我承诺明天完成这件事' }) === null);
+ok('O2 显式传入优先', bid.extractPeer({ content: '随便一句', peer: '星尘' }) === '星尘');
+
+// ── O3 → 去重报告 ──
+reset();
+writeAgent('o3', [
+  entry({ id: 'o3-a', timestamp: '2026-10-01T00:00:00Z', content: '溢出告警：无（EXIT=0，无输出）', sig: P() }),
+  entry({ id: 'o3-b', timestamp: '2026-10-02T00:00:00Z', content: '溢出告警：无（EXIT=0，无输出）', sig: P() }),
+  entry({ id: 'o3-c', timestamp: '2026-10-03T00:00:00Z', content: '溢出告警：无（EXIT=0，无输出）', sig: P() }),
+  entry({ id: 'o3-d', timestamp: '2026-10-04T00:00:00Z', content: '这是完全不同的一条内容记录', sig: P() }),
+]);
+const rd = bs.findDuplicateTexts({ memoryDir: MEM });
+ok('O3 识别出 1 组重复', rd.dupGroups === 1, JSON.stringify({ groups: rd.dupGroups }));
+ok('O3 该组计数为 3', rd.groups[0] && rd.groups[0].count === 3, JSON.stringify(rd.groups[0] && rd.groups[0].count));
+ok('O3 只报告不删除（条目数不变）', (fs.readFileSync(path.join(MEM, 'o3.md'), 'utf8').match(/^id: /gm) || []).length === 4);
+
+// ── O4 → 前置门槛 ──
+const NOW2 = Date.parse('2026-10-18T12:00:00Z');
+const tShort = bs.checkThreshold({ firstAt: '2026-10-10T00:00:00Z', interactions: 3, diffs: 0 }, { now: NOW2 });
+ok('O4 窗口不足 → 不评', !tShort.assessable && tShort.label === '数据不足 · 不评', JSON.stringify(tShort.reasons));
+const tFew = bs.checkThreshold({ firstAt: '2026-08-01T00:00:00Z', interactions: 3, diffs: 2 }, { now: NOW2 });
+ok('O4 互动不足 → 不评', !tFew.assessable, JSON.stringify(tFew.reasons));
+const tNoDiff = bs.checkThreshold({ firstAt: '2026-08-01T00:00:00Z', interactions: 20, diffs: 0 }, { now: NOW2 });
+ok('O4 无痕迹 → 不评', !tNoDiff.assessable, JSON.stringify(tNoDiff.reasons));
+const tPass = bs.checkThreshold({ firstAt: '2026-08-01T00:00:00Z', interactions: 20, diffs: 2 }, { now: NOW2 });
+ok('O4 三项达标 → 可评估', tPass.assessable && tPass.label === '可评估', JSON.stringify(tPass.metrics));
+
+// O4 漏斗留痕
+const funnel = bs.thresholdFunnel([
+  { name: 'good', firstAt: '2026-08-01T00:00:00Z', interactions: 20, diffs: 2 },
+  { name: 'bad1', firstAt: '2026-10-15T00:00:00Z', interactions: 2, diffs: 0 },
+  { name: 'bad2', firstAt: '2026-10-16T00:00:00Z', interactions: 1, diffs: 0 },
+], { now: NOW2 });
+ok('O4 漏斗统计正确', funnel.total === 3 && funnel.passed === 1 && funnel.blocked === 2, JSON.stringify(funnel));
+ok('O4 挡率 >50% 触发复审', funnel.reviewTriggered === true, `ratio=${funnel.blockedRatio}`);
+
+reset();
+
 // ── 收尾 ──
 try { fs.rmSync(TMP, { recursive: true, force: true }); } catch {}
 
