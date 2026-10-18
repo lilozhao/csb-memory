@@ -4,7 +4,7 @@
  *
  * 用法：
  *   node scripts/bid-state.js backfill [--dry] [--window 90] [--now ISO]
- *   node scripts/bid-state.js resigil  [--dry]
+ *   node scripts/bid-state.js resigil  [--dry] [--kinds promise,correction]
  *   node scripts/bid-state.js stats
  *
  * 纪律：默认只读预览（--dry 可省，本 CLI **默认真实写入**——与一期 sync 脚本一致；
@@ -50,7 +50,9 @@ switch (cmd) {
     process.exit(0);
   }
   case 'resigil': {
-    const r = bs.resigil({ dryRun });
+    const kindsArg = arg('--kinds'); // 如 --kinds promise,correction
+    const kinds = kindsArg ? kindsArg.split(',').map(s => s.trim()).filter(Boolean) : null;
+    const r = bs.resigil({ dryRun, kinds });
     printResigil(r);
     process.exit(0);
   }

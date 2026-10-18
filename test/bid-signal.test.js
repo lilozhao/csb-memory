@@ -93,6 +93,57 @@ ok('A9 既有字段集合一致（不含 bid_signal）', !!sameKeys);
 ok('A10 SPEC-MEM-0001 存在且 lint 已过（见外部记录）', fs.existsSync(path.join(__dirname, '..', 'specs', 'SPEC-MEM-0001', 'spec.md')));
 
 cleanup();
+// ═══ v2.0 精度验收（A11–A18 · SPEC-MEM-0001 v2.0）═══
+console.log('\n── v2.0 词表精修验收 ──');
+
+// A11 → R10：谈论承诺语境不判 promise
+cleanup();
+core.add({ agent: AGENT, type: 'event', content: '讨论一下承诺履约率怎么算', source: 'test' });
+entries = core.get(AGENT);
+ok('A11 「讨论承诺」谈论语境 → 不判 promise', entries[0] && !entries[0].bid_signal);
+
+// A12 → R10：谈论决策语境不判 decision
+cleanup();
+core.add({ agent: AGENT, type: 'event', content: '关于是否同意该方案，还需再看', source: 'test' });
+entries = core.get(AGENT);
+ok('A12 「关于是否同意」谈论语境 → 不判 decision', entries[0] && !entries[0].bid_signal);
+
+// A13 → R11：否定语境不判 promise
+cleanup();
+core.add({ agent: AGENT, type: 'event', content: '本轮非承诺，只做可行性评估', source: 'test' });
+entries = core.get(AGENT);
+ok('A13 「非承诺」否定语境 → 不判 promise', entries[0] && !entries[0].bid_signal);
+
+// A14 → R11：否定语境不判 decision
+cleanup();
+core.add({ agent: AGENT, type: 'event', content: '没有决定，先收集意见', source: 'test' });
+entries = core.get(AGENT);
+ok('A14 「没有决定」否定语境 → 不判 decision', entries[0] && !entries[0].bid_signal);
+
+// A15 → R12：纠错优先于承诺
+cleanup();
+core.add({ agent: AGENT, type: 'event', content: '我方更正：之前承诺的日期写错了', source: 'test' });
+entries = core.get(AGENT);
+ok('A15 同时含纠错与承诺 → kind=correction', entries[0].bid_signal && entries[0].bid_signal.kind === 'correction',
+  entries[0].bid_signal && entries[0].bid_signal.kind);
+
+// A16 → R13：评审叙述不判 decision
+cleanup();
+core.add({ agent: AGENT, type: 'event', content: '签字结果：5×✅A 同意定稿，全员共识', source: 'test' });
+entries = core.get(AGENT);
+ok('A16 评审叙述「同意定稿」→ 不判 decision', entries[0] && !entries[0].bid_signal);
+
+// A17 → R13：真决策仍要判出
+cleanup();
+core.add({ agent: AGENT, type: 'event', content: '一澜批准 SPEC-MEM-0002，直接开工', source: 'test' });
+entries = core.get(AGENT);
+ok('A17 「一澜批准」→ 判 decision', entries[0].bid_signal && entries[0].bid_signal.kind === 'decision',
+  entries[0].bid_signal && entries[0].bid_signal.kind);
+
+// A18 → 回归：v1.0 A1–A10 全过（由本文件上半段保证，此处显式断言）
+ok('A18 v1.0 既有验收仍通过（A1–A10 见上）', fail === 0);
+
+cleanup();
 console.log(`\n通过: ${pass}\n失败: ${fail}`);
 console.log(`${fail === 0 ? '✅' : '❌'} bid-signal: ${pass} passed, ${fail} failed`);
 process.exit(fail === 0 ? 0 : 1);
