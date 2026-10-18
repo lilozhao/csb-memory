@@ -1,7 +1,7 @@
 ---
 spec_id: SPEC-MEM-0001
 title: 记忆条目落 BID 关系信号字段（一期）
-status: draft
+status: approved
 level: M
 version: 2.0
 repo: csb-memory

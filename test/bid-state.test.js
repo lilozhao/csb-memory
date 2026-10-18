@@ -217,6 +217,17 @@ writeLedger([
 r = bs.backfill({ memoryDir: MEM, ledgerPath: LED, now: NOW });
 ok('A2d spec.approve 不当作完成锚', r.byState.fulfilled === 0, JSON.stringify(r.byState));
 
+
+// ── A4b → R4 反例：列表语境里的 ⛔ 不是撤回证据（2026-10-18 真机误判）──
+reset();
+writeAgent('a4b', [
+  entry({ id: 'a4b-1', timestamp: '2026-10-06T00:00:00Z', content: 'TODO：N-2 行改 ⛔ 否决·全停；找四候选只剩 N-1 / N-3', sig: P() }),
+]);
+writeLedger([]);
+r = bs.backfill({ memoryDir: MEM, ledgerPath: LED, now: NOW });
+ok('A4b 列表语境 ⛔ 不判 withdrawn', r.byState.withdrawn === 0, JSON.stringify(r.byState));
+ok('A4b 该条保持 pending', r.byState.pending === 1, JSON.stringify(r.byState));
+
 // ── 收尾 ──
 try { fs.rmSync(TMP, { recursive: true, force: true }); } catch {}
 
