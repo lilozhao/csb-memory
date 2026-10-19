@@ -21,7 +21,8 @@ const tests = [
   { name: 'bid-signal.js (SPEC-MEM-0001)', file: 'bid-signal.test.js' },
   { name: 'bid-state.js (SPEC-MEM-0002)', file: 'bid-state.test.js' },
   { name: 'bid-connection.js (O6-S1)', file: 'bid-connection.test.js' },
-  { name: 'bid-consent.js (O6-S3)', file: 'bid-consent.test.js' }
+  { name: 'bid-consent.js (O6-S3)', file: 'bid-consent.test.js' },
+  { name: 'bid-fetch.js (O6-S4)', file: 'bid-fetch.test.js' }
 ];
 
 async function runAllTests() {
