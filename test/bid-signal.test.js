@@ -222,6 +222,33 @@ for (const [name, text] of opsCases) ok(name, bid.detectKind(text) === 'correcti
 ok('C8 「等墨白拍板」→ 待决，不判 decision', bid.detectKind('等墨白拍板 A/B/C') !== 'decision', bid.detectKind('等墨白拍板 A/B/C'));
 ok('C9 「墨白拍板 = B」→ 判 decision', bid.detectKind('墨白拍板 = B: 1 小时一次') === 'decision');
 
+// ── v2.3（2026-10-19 · 阿轩对照实测驱动）────────────────
+// D1-D4：预防语境护栏（阿轩：「误判」91 块命中里绝大多数是「防止/避免误判」）
+const prevCases = [
+  ['D1 「防止下次误判」→ 不判 correction', '防止下次晨间自检再次误判', false],
+  ['D2 「避免下次误判」→ 不判', '避免下次误判', false],
+  ['D3 「防止假离线误判」→ 不判', '校验窗口升级建议（防止假离线误判）', false],
+  ['D4 「DHT 误判为 CACHE」→ 真纠错仍判', 'DHT 误判为 CACHE 0 agents → 实测 FULL', true],
+];
+for (const [name, text, expect] of prevCases) {
+  const k = bid.detectKind(text);
+  if (expect) ok(name, k === 'correction', k);
+  else ok(name, k !== 'correction', k);
+}
+
+// D5：decision 排除器改子句级（阿轩：全文测导致长块 decision 塌到 4.8%）
+ok('D5 长块含「统计」但决策词在别句 → 仍判 decision',
+  bid.detectKind('本次维护：统计了 258 个文件。\n一澜拍板：全部清理，统一更名。\n下一步：推送五平台。') === 'decision',
+  bid.detectKind('本次维护：统计了 258 个文件。\n一澜拍板：全部清理，统一更名。\n下一步：推送五平台。'));
+ok('D6 「结论：凭据是密码」同句 → 仍不判', bid.detectKind('结论：凭据是密码（basic auth），不是 API token') !== 'decision');
+
+// D7-D8：setSelf 自我排除（阿轩问题 3 · 不可移植性硬反例）
+bid.setSelf('阿轩');
+ok('D7 setSelf 后，自身名不作 peer', bid.extractPeer({ content: '阿轩拍板要全部清理' }) === null,
+  bid.extractPeer({ content: '阿轩拍板要全部清理' }));
+ok('D8 setSelf 后，他者仍正常抽取', bid.extractPeer({ content: '墨白拍板 = B' }) === '墨白');
+bid.setSelf(null);
+
 // A18 → 回归：v1.0 A1–A10 全过（由本文件上半段保证，此处显式断言）
 ok('A18 v1.0 既有验收仍通过（A1–A10 见上）', fail === 0);
 
