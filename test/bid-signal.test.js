@@ -140,6 +140,19 @@ entries = core.get(AGENT);
 ok('A17 「一澜批准」→ 判 decision', entries[0].bid_signal && entries[0].bid_signal.kind === 'decision',
   entries[0].bid_signal && entries[0].bid_signal.kind);
 
+// A19 → 回归：add() 必须把判定出的 bid_signal **回传给调用方**
+//   2026-10-19 生产管线排查：字段本身有落盘，但返回值缺 bid_signal，
+//   下游若读返回值做统计（如 sync 侧汇总）会看到「全是 null」。
+cleanup();
+const r19 = core.add({ agent: AGENT, type: 'event', content: '我承诺明天把 W-14 验完', source: 'test' });
+ok('A19 add() 返回 bid_signal（回传）', r19 && r19.bid_signal && r19.bid_signal.kind === 'promise',
+  r19 && JSON.stringify(r19.bid_signal));
+
+// A20 → 回归：无信号词时返回值不得凭空造字段
+cleanup();
+const r20 = core.add({ agent: AGENT, type: 'event', content: '今天天气不错，去西湖边坐了一会儿', source: 'test' });
+ok('A20 无信号时返回不含 bid_signal', r20 && r20.bid_signal === undefined, r20 && JSON.stringify(r20));
+
 // A18 → 回归：v1.0 A1–A10 全过（由本文件上半段保证，此处显式断言）
 ok('A18 v1.0 既有验收仍通过（A1–A10 见上）', fail === 0);
 
