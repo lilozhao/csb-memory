@@ -203,6 +203,25 @@ const decPos = [
 ];
 for (const [name, text] of decPos) ok(name, bid.detectKind(text) === 'decision', bid.detectKind(text));
 
+// ── v2.2（2026-10-19 · 阿轩「系统日志语体」实测驱动）────────────────
+// C1-C5：工作指令语体的 peer 抽取（原表只有社交动词，墨白拍板 550 次全漏）
+ok('C1 「墨白拍板 = B」→ peer=墨白', bid.extractPeer({ content: '墨白拍板 = B: 1 小时一次' }) === '墨白');
+ok('C2 「墨白授权」→ peer=墨白', bid.extractPeer({ content: '墨白授权后我改了配置' }) === '墨白');
+ok('C3 「与若兰确认方案」→ peer=若兰', bid.extractPeer({ content: '与若兰确认方案' }) === '若兰');
+
+// C4-C8：运维语体纠错（曾 68 个块全判 null，而它们是真纠错）
+const opsCases = [
+  ['C4 「我自纠时区统计错」→ correction', '10/19 我自纠时区统计错'],
+  ['C5 「红线违反」→ correction', '红线违反，立即替换'],
+  ['C6 「误判为成功」→ correction', 'analyzer 误判为成功'],
+  ['C7 「复核」在 CORRECTION_STRICT 中一致（曾只存在于 DIR_OUT）', '我方复核发现一处异常'],
+];
+for (const [name, text] of opsCases) ok(name, bid.detectKind(text) === 'correction', bid.detectKind(text));
+
+// C8/C9：语体歧义——「等X拍板」是待决（不是决策），「X拍板 = Y」是决策
+ok('C8 「等墨白拍板」→ 待决，不判 decision', bid.detectKind('等墨白拍板 A/B/C') !== 'decision', bid.detectKind('等墨白拍板 A/B/C'));
+ok('C9 「墨白拍板 = B」→ 判 decision', bid.detectKind('墨白拍板 = B: 1 小时一次') === 'decision');
+
 // A18 → 回归：v1.0 A1–A10 全过（由本文件上半段保证，此处显式断言）
 ok('A18 v1.0 既有验收仍通过（A1–A10 见上）', fail === 0);
 
