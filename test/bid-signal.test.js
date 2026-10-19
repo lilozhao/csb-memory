@@ -249,6 +249,30 @@ ok('D7 setSelf 后，自身名不作 peer', bid.extractPeer({ content: '阿轩�
 ok('D8 setSelf 后，他者仍正常抽取', bid.extractPeer({ content: '墨白拍板 = B' }) === '墨白');
 bid.setSelf(null);
 
+// ── v2.4（2026-10-19 · 本机 143 条人工复审驱动）────────────────
+// E1-E4：promise 去掉「待办」裸分支（实测 56 条里 50 条是任务清单）
+const promiseCases = [
+  ['E1 「待办：等一澜细看」→ 不判 promise', '待办：等一澜逐个细看 → 记录问题图', false],
+  ['E2 「⏳ 待办：①清理」→ 不判', '⏳ 待办：①是否清理 41 处', false],
+  ['E3 「M4 待办：公告」→ 不判', 'M4 待办：双语论坛公告', false],
+  ['E4 「我承诺明天验完」→ 判 promise', '我承诺明天把 W-14 验完', true],
+  ['E5 「对阿轩承诺」→ 判 promise', '对阿轩承诺：推五平台', true],
+  ['E6 「回帖承诺」→ 判 promise', '回帖承诺：下一步把圆桌机制正式化', true],
+];
+for (const [name, text, expect] of promiseCases) {
+  const k = bid.detectKind(text);
+  if (expect) ok(name, k === 'promise', k);
+  else ok(name, k !== 'promise', k);
+}
+
+// E7-E8：correction 必须关系显式（peer 与 direction 都空 → 非关系信号）
+ok('E7 无对象无方向的 correction → 不落字段', bid.signalOf({ content: 'registry-status.py 误报修复（866e5af）' }) === null,
+  JSON.stringify(bid.signalOf({ content: 'registry-status.py 误报修复（866e5af）' })));
+ok('E8 有对象的 correction → 仍落字段', (() => {
+  const x = bid.signalOf({ content: '墨丘主动更正：我方 A3 收到的不是他主会话说的' });
+  return x && x.kind === 'correction' && x.peer === '墨丘';
+})(), JSON.stringify(bid.signalOf({ content: '墨丘主动更正：我方 A3 收到的不是他主会话说的' })));
+
 // A18 → 回归：v1.0 A1–A10 全过（由本文件上半段保证，此处显式断言）
 ok('A18 v1.0 既有验收仍通过（A1–A10 见上）', fail === 0);
 

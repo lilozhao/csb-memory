@@ -298,7 +298,10 @@ ok('O5 第一人称认错 → out', bid.signalOf({ content: '我说错了，接�
 ok('O5 对方主动更正 → in', bid.signalOf({ content: '墨丘主动更正：数据源有误' }).direction === 'in');
 ok('O5 采纳指正 → in', bid.signalOf({ content: '采纳墨丘指正' }).direction === 'in');
 ok('O5 已知连接名指出我方 → in', bid.signalOf({ content: '阿轩指出我方口径有误' }).direction === 'in');
-ok('O5 无主语更正 → 仍 null（不猜）', bid.signalOf({ content: '更正：早报日期有误' }).direction === null);
+// v2.4：correction 必须关系显式 —— peer 与 direction 都为空时整条不落字段（signalOf 返回 null）
+ok('O5 无主语更正 → 整条不落（非关系信号）', bid.signalOf({ content: '更正：早报日期有误' }) === null);
+ok('O5 有对象关系 → 保留 correction（peer 或 direction 任一非空）',
+  (() => { const x = bid.signalOf({ content: '与墨丘确认：我方早报日期写错了，已更正' }); return x && x.kind === 'correction' && (x.peer || x.direction); })());
 
 // ── O7 → 上下文窗口 ──
 const es = [{ content: '甲' }, { content: '乙' }, { content: '丙' }];
