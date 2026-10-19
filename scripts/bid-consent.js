@@ -6,7 +6,8 @@
  *   node scripts/bid-consent.js list                     # 全部同意记录
  *   node scripts/bid-consent.js check <peer>             # 是否允许取数
  *   node scripts/bid-consent.js grant <peer> <a,b>       # 双方同意（必须 ≥2 方）
- *   node scripts/bid-consent.js withdraw <peer> --by X   # 撤回
+ *   node scripts/bid-consent.js withdraw <peer> --by X   # 撤回（24h 隔离 / 48h 删除目标 / 72h 上限）
+ *   node scripts/bid-consent.js notified <peer> --by X   # 登记已通知对方（Q-S3-2 必做）
  *   node scripts/bid-consent.js purge <peer>             # 删除计划
  *   node scripts/bid-consent.js purged <peer>            # 标记已删除
  *   node scripts/bid-consent.js pending                  # 待删除清单
@@ -54,8 +55,23 @@ switch (cmd) {
     try {
       const rec = bc.withdraw(peer, by);
       console.log(`⛔ 已撤回：${peer}（by ${by}）`);
-      console.log(`   数据删除期限：${rec.purgeDeadline}（72 小时内）`);
+      console.log(`   隔离生效：立即`);
+      console.log(`   隔离期限：${rec.isolateDeadline}（24h）`);
+      console.log(`   删除目标：${rec.purgeTarget}（48h）`);
+      console.log(`   硬上限：  ${rec.purgeDeadline}（72h）`);
+      console.log(`   ⚠️ 下一步必做：node scripts/bid-consent.js notified ${peer} --by <who>（Q-S3-2）`);
       console.log(`   下一步：node scripts/bid-consent.js purge ${peer}`);
+    } catch (e) {
+      console.error(`⛔ ${e.message}`);
+      process.exit(1);
+    }
+    break;
+  }
+
+  case 'notified': {
+    try {
+      const rec = bc.markNotified(pos[0], { by: arg('--by', 'unknown'), to: arg('--to', pos[0]), method: arg('--method', 'a2a') });
+      console.log(`✅ 已登记通知：${rec.peer} → ${rec.notified.to}（${rec.notified.at}）`);
     } catch (e) {
       console.error(`⛔ ${e.message}`);
       process.exit(1);

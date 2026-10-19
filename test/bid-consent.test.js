@@ -45,12 +45,53 @@ ok('双方同意 → 允许取数', r.allowed === true, r.reasons.join('|'));
 ok('scope 限定信号读', rec.scope.includes('bid_signal.read'));
 ok('记录告知版本', rec.notice === bc.CURRENT_NOTICE);
 
-// ── 告知版本不符 → 视为未同意 ──
+// ── 告知语义版本不符 → 视为未同意（Q-S3-4：比语义版本，不比文案 sha） ──
 const f4 = newFile();
-bc.grant('墨丘', ['若兰', '墨丘'], { file: f4, notice: 'bid-a-consent-notice-v0' });
+bc.grant('墨丘', ['若兰', '墨丘'], { file: f4, noticeVersion: 'v0' });
 r = bc.checkConsent('墨丘', { file: f4 });
-ok('告知版本不符 → 不允许', r.allowed === false);
-ok('版本不符原因明确', r.reasons.some(x => x.includes('版本不符')), r.reasons.join('|'));
+ok('告知语义版本不符 → 不允许', r.allowed === false);
+ok('版本不符原因明确', r.reasons.some(x => x.includes('语义版本不符')), r.reasons.join('|'));
+
+// ── Q-S3-4 反证：文案变了但语义版本不变 → 同意仍然有效 ──
+const f4b = newFile();
+bc.grant('墨丘', ['若兰', '墨丘'], { file: f4b, notice: 'bid-a-consent-notice-v1-typo-fix', noticeVersion: 'v1' });
+r = bc.checkConsent('墨丘', { file: f4b });
+ok('Q-S3-4 措辞/排版变更不触发重签', r.allowed === true, r.reasons.join('|'));
+
+// ── Q-S3-1 两段式：撤回后 24h 隔离 / 48h 删除目标 / 72h 硬上限 ──
+const f4c = newFile();
+bc.grant('澈', ['若兰', '澈'], { file: f4c });
+const wd = bc.withdraw('澈', '若兰', { file: f4c });
+const H = 3600 * 1000;
+const t0 = Date.parse(wd.withdrawn.at);
+ok('Q-S3-1 隔离期限 = 撤回 + 24h', Date.parse(wd.isolateDeadline) - t0 === 24 * H);
+ok('Q-S3-1 删除目标 = 撤回 + 48h', Date.parse(wd.purgeTarget) - t0 === 48 * H);
+ok('Q-S3-1 硬上限 = 撤回 + 72h', Date.parse(wd.purgeDeadline) - t0 === 72 * H);
+ok('Q-S3-1 撤回即置隔离标记', wd.isolated === true);
+r = bc.checkConsent('澈', { file: f4c });
+ok('Q-S3-1 隔离期内不允许取数', r.allowed === false && r.reasons.some(x => x.includes('已隔离')), r.reasons.join('|'));
+
+// ── Q-S3-2 撤回未通知对方 → 流程未完成 ──
+ok('Q-S3-2 撤回未通知 → 原因含「尚未通知」', r.reasons.some(x => x.includes('尚未通知')), r.reasons.join('|'));
+const nrec = bc.markNotified('澈', { file: f4c, to: '澈', by: '若兰' });
+ok('Q-S3-2 markNotified 记录通知', !!nrec.notified && nrec.notified.to === '澈');
+r = bc.checkConsent('澈', { file: f4c });
+ok('Q-S3-2 通知后不再报「尚未通知」', !r.reasons.some(x => x.includes('尚未通知')), r.reasons.join('|'));
+
+// ── Q-S3-1 阶段判定：隔离中 / 该删了 ──
+{
+  const nowIso = new Date(t0 + 25 * H).toISOString();
+  const t = bc.readFileForTest ? null : null;
+  const fsx = require('fs');
+  const data = JSON.parse(fsx.readFileSync(f4c, 'utf8'));
+  data.connections.find(c => c.peer === '澈').purgedAt = null;
+  fsx.writeFileSync(f4c, JSON.stringify(data, null, 2));
+  const pending = bc.listPendingPurge({ file: f4c, now: t0 + 25 * H });
+  ok('Q-S3-1 过 24h 未删 → stage=isolated', pending.pending.some(x => x.peer === '澈' && x.stage === 'isolated'),
+    JSON.stringify(pending.pending));
+  const overdue = bc.listPendingPurge({ file: f4c, now: t0 + 73 * H });
+  ok('Q-S3-1 过 72h 未删 → 进 overdue', overdue.overdue.some(x => x.peer === '澈'));
+}
 
 // ── 过期 ──
 const f5 = newFile();
