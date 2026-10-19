@@ -153,6 +153,56 @@ cleanup();
 const r20 = core.add({ agent: AGENT, type: 'event', content: '今天天气不错，去西湖边坐了一会儿', source: 'test' });
 ok('A20 无信号时返回不含 bid_signal', r20 && r20.bid_signal === undefined, r20 && JSON.stringify(r20));
 
+// ── v2.1（2026-10-19 · 若琢跨宿主 99 条实测驱动）────────────────
+// B1-B6：decision 未来时排除（实测误判率 35%，6/20 条）
+const decCases = [
+  ['B1 「等一澜拍板」→ 不判决策', '等一澜拍板', false],
+  ['B2 「需要一澜确认」→ 不判决策', 'agent.json 被改了——需要一澜确认', false],
+  ['B3 「等确认后转发」→ 不判决策', '等确认后转发', false],
+  ['B4 「评审通过，lint 修正 3 处」→ 技术叙述不判', '评审通过，lint 修正 3 处', false],
+  ['B5 「一澜批准 SPEC-MEM-0002」→ 真决策仍判', '一澜批准 SPEC-MEM-0002，直接开工', true],
+  ['B6 「定案：默认名」→ 真决策仍判', '定案：默认名「碳硅契」', true],
+];
+for (const [name, text, expectDecision] of decCases) {
+  const k = bid.detectKind(text);
+  if (expectDecision) ok(name, k === 'decision', k);
+  else ok(name, k !== 'decision', k);
+}
+
+// B7-B12：DIR_IN 主语约束（实测 5 条方向反转，全是「对方名 + 纠错词」共现）
+const dirCases = [
+  ['B7 「澈主动指出我方错误」→ in', '澈主动指出我方错误', 'in'],
+  ['B8 「明德指出他从未见过该变量」→ in', '明德指出他从未见过该变量', 'in'],
+  ['B9 「一澜指出措辞」→ in', '一澜指出措辞', 'in'],
+  ['B10 「澈叫错名字→第三次纠正」→ out（主语是我）', '澈第三次叫错名字「若兰」→ 第三次纠正', 'out'],
+  ['B11 「澈第四次叫错——我纠正」→ out', '澈第四次叫错名字——我纠正', 'out'],
+  ['B12 「我方更正」→ out', '我方更正：之前承诺的日期写错了', 'out'],
+];
+for (const [name, text, expectDir] of dirCases) {
+  const k = bid.detectKind(text);
+  const d = k === 'correction' ? (bid.DIR_IN.test(text) ? "in" : bid.DIR_OUT.test(text) ? 'out' : 'null') : '-';
+  ok(name, k === 'correction' && d === expectDir, `${k}/${d}`);
+}
+
+// ── v2.1b/c：报告结论 / 过程 / 技术串 不算决策（本机 65 条重跑实测多出 100 条假决策）──
+const decNeg = [
+  ['B13 「范围纪律：…」→ 不判', '范围纪律：仅审三期增量；R1–R12 已 approved 基线不重议'],
+  ['B14 「结论：凭据是密码」→ 不判', '结论：凭据是密码（basic auth），不是 API token'],
+  ['B15 「恺侧结果：未弹 L3」→ 不判', '恺侧结果：未弹 L3 · 无 CONFIRM-SEND'],
+  ['B16 「下一步：…」→ 不判', '下一步：对方 enabled=true 后 → 签发 UAC'],
+  ['B17 「决定：…需一澜 L3 确认」→ 不判', '决定：改码+重启+推上游=写操作，需一澜 L3 确认'],
+  ['B18 「复验（新锚钥）：AUTO_APPROVED」→ 不判', '复验（新锚钥）：AUTO_APPROVED policy=若兰'],
+];
+for (const [name, text] of decNeg) ok(name, bid.detectKind(text) !== 'decision', bid.detectKind(text));
+
+// 反向：真决策不能被上面这些规则误杀
+const decPos = [
+  ['B19 「处置决定：选 C」→ 仍判', '处置决定：选 C——本任务归档为「真窗口负例」'],
+  ['B20 「一澜拍板：① 补写」→ 仍判', '一澜拍板：① 给 metacognition 补写 ARCHITECTURE.md'],
+  ['B21 「拍板：全部清理」→ 仍判', '拍板：全部清理，统一更名为「一澜」'],
+];
+for (const [name, text] of decPos) ok(name, bid.detectKind(text) === 'decision', bid.detectKind(text));
+
 // A18 → 回归：v1.0 A1–A10 全过（由本文件上半段保证，此处显式断言）
 ok('A18 v1.0 既有验收仍通过（A1–A10 见上）', fail === 0);
 
