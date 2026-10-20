@@ -17,6 +17,7 @@ const tests = [
   { name: 'propagation.js (v1.0)', file: 'test-propagation.js' },
   { name: 'raw.js (v1.1)', file: 'test-raw.js' },
   { name: 'evolution.js (P0-4)', file: 'test-evolution.js' },
+  { name: 'experience.js (Harness² C3)', file: 'test-experience.js' },
   { name: 'promotion-gate.js (P0-2)', file: 'test-promotion.js' },
   { name: 'bid-signal.js (SPEC-MEM-0001)', file: 'bid-signal.test.js' },
   { name: 'bid-state.js (SPEC-MEM-0002)', file: 'bid-state.test.js' },
