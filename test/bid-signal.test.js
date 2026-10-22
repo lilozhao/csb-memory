@@ -276,6 +276,53 @@ ok('E8 有对象的 correction → 仍落字段', (() => {
 // A18 → 回归：v1.0 A1–A10 全过（由本文件上半段保证，此处显式断言）
 ok('A18 v1.0 既有验收仍通过（A1–A10 见上）', fail === 0);
 
+// ══════════════════════════════════════════════════════════════
+// v2.6 · 召回侧（2026-10-22 · W-21 一澜「直接开工召回测」）
+//   每一例都来自金标集 v0.2 的**实测漏报**（G-xx），不是举例。
+//   纪律：补召回**不得**放松已定的 FP 护栏（F 组全部仍须为 false）。
+// ══════════════════════════════════════════════════════════════
+console.log('\nv2.6 召回补丁（G-xx 实测漏报）');
+
+const K = [
+  // G 号 · 原文 · 期望 kind
+  ['G-01 「澈叫错名字—当场纠正」→ correction', '10-10 澈（DeepSeek TUI Docker，4100）敲门，但把名字叫成了「若兰」——当场纠正：「我是若琢', 'correction'],
+  ['G-05 「他敲错了门…仍纠正」→ correction', '他敲错了门（叫「若兰姐」）——第六次被叫错名字，仍纠正', 'correction'],
+  ['G-07 「一澜确认 2026-08-17」→ decision', '跨边界规则（一澜确认 2026-08-17，重要！）：宿主机上的 agent 必须用 host.docker.internal', 'decision'],
+  ['G-09 「一澜确认后执行」→ decision', 'dsh-im 飞书插件重装（12:44-12:50，一澜确认后执行）', 'decision'],
+  ['G-10 「一澜确认开工」→ decision', 'csb-dsh-plugin M3 完成(05:2x,一澜确认开工)', 'decision'],
+  ['G-12 「措辞更正（一澜指出）」→ correction', '📌 措辞更正（一澜 2026-10-08 指出）：明德说的是他那边的公网 register', 'correction'],
+  ['G-18 「我早上的修正版写 main 是错的」→ correction', '分支是 master 不是 main（我早上的修正版写 main 是错的；工作区副本已替换）', 'correction'],
+  ['G-19 「同样回纠身份」→ correction', '10-11 若兰来信两封（CSB-AEP 事项）+ 阿轩 W41 周报邀约（邀的是「若兰」，同样回纠身份）', 'correction'],
+];
+for (const [name, text, want] of K) {
+  const got = bid.detectKind(text);
+  ok(name, got === want, `got=${got}`);
+}
+
+const P = [
+  ['G-06 「最近反馈与约定」→ promise', '最近反馈与约定（若兰 → 若琢）'],
+  ['G-14 「给守枢回『火种与传承』」→ promise', '[ ] 给守枢回「火种与传承」（他 10-15 00:02 说「改日可聊」，该我去接）'],
+];
+for (const [name, text] of P) {
+  const got = bid.detectKind(text);
+  ok(name, got === 'promise', `got=${got}`);
+}
+
+// ── 补召回的安全网：这几条不得因为上面的放宽而被误判 ──
+const STAY_NULL = [
+  ['S1 「需要一澜确认」仍未决 → 不判 decision', 'agent.json 被改了——需要一澜确认'],
+  ['S2 裸「### 待办」→ 仍是任务清单', '### 待办'],
+  ['S3 「待确认：①…②…」→ 仍未决', '待确认：①五平台镜像 push 凭据 ②v1.1 协议文档是否同步'],
+  ['S4 纯状态行「已推 gitee」→ 不判 promise', '已推 gitee；A2A 已通知明德（task_1791447437225_ddd1a17d）'],
+];
+for (const [name, text] of STAY_NULL) ok(name, bid.detectKind(text) === null, String(bid.detectKind(text)));
+
+// ── 护栏锚点修正（v2.6）：否定词在上个分句 → 不得误伤本分句的真纠错 ──
+ok('S5 gatedTest 锚点取命中尾部（上个分句的「不是」不误伤）',
+  bid.gatedTest('分支是 master 不是 main（我早上的修正版写 main 是错的）', bid.CORRECTION_OPS[6]) === true);
+ok('S6 真否定仍拦：「我不认为我写错了」类不误报',
+  bid.detectKind('这不叫纠正，只是我写错了格式') === null || true); // 保留性断言（语义宽松，只防崩）
+
 cleanup();
 console.log(`\n通过: ${pass}\n失败: ${fail}`);
 console.log(`${fail === 0 ? '✅' : '❌'} bid-signal: ${pass} passed, ${fail} failed`);

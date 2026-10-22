@@ -1,6 +1,6 @@
 {
   "name": "csb-memory",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Carbon-Silicon Bond Memory System — 碳硅契记忆系统（CSB-Memory v1.2）",
   "main": "lib/index.js",
   "scripts": {
