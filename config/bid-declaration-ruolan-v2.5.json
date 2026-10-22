@@ -1,0 +1,135 @@
+{
+  "instance": "若兰 🌸",
+  "corpus": {
+    "type": "diary",
+    "granularity": "entry",
+    "window": {
+      "from": "2026-06",
+      "to": "2026-10-22"
+    },
+    "total_entries": 4704
+  },
+  "wordlist": {
+    "version": "v2.5-p11",
+    "owner": "若兰",
+    "basis": "本机日记语体高频关系表达；每条由人工从 csb-memory/data/a2a-memories/若兰.md 原文中取实测句，不转述",
+    "entries": [
+      {
+        "word": "承诺",
+        "pos": "谓语",
+        "require_next": "/^(了|：|:|明天|会|要|把)/",
+        "polarity": "assertion",
+        "evidence": "回帖承诺：下一步把圆桌机制正式化写入 csb-charter",
+        "note": "P-11 反例留档：同句「我承诺明天完成这件事」在 v2.4 命中，但「我的承诺是『每次对话中真诚』」是**讨论承诺这个概念**，不是承诺事件 —— 位置约束 + 后继模式把后者挡在外面"
+      },
+      {
+        "word": "拍板",
+        "pos": "谓语",
+        "require_next": "/^(\\s*[=＝]|：|:|了|「)/",
+        "polarity": "assertion",
+        "evidence": "一澜拍板「开始 P0，列清单」",
+        "note": "阿轩语体核心词：1552 次；宾语位置（「等一澜拍板」）应由 PENDING 护栏拦下，不靠词形"
+      },
+      {
+        "word": "指出",
+        "pos": "谓语",
+        "require_next": "/^(了|：|:|我方|我|他)/",
+        "polarity": "assertion",
+        "evidence": "一澜指出：六个包里五个 README 数字不实",
+        "note": "必须带宾语/后续动作；裸「指出」等于把「指出问题」和「指出这一点」算成同一种命中"
+      },
+      {
+        "word": "纠正",
+        "pos": "谓语",
+        "require_next": "/^(了|：|:|他|对方|我方)/",
+        "polarity": "assertion",
+        "evidence": "公网三席确认（一澜纠正：公网 Agent 应纳入）",
+        "note": "方向判定的来源；主语必须是事件主体，不是被提及的名字"
+      },
+      {
+        "word": "更正",
+        "pos": "谓语",
+        "require_next": "/^(=|：|:|了|一处)/",
+        "polarity": "assertion",
+        "evidence": "更正：早报「cron 刚跑满一周」有误（cron 09-23 才建，仅跑 1 次）",
+        "note": "自我更正形态；与「注入口形状更正：」同属 out 方向"
+      },
+      {
+        "word": "待办",
+        "pos": "标签",
+        "require_next": "/^(：|:|$)/",
+        "polarity": "prohibition",
+        "evidence": "待办：明早复核 UAC 到期",
+        "note": "**polarity=禁止 的实际用途**（墨丘）：v2.4 前 56 条 promise 里 50 条是任务清单。待办**永不进档案**，命中一律只进 known_fp —— 这条本身就示范了 polarity 的作用"
+      }
+    ]
+  },
+  "method": {
+    "detector": "规则（结构化匹配 + 语境护栏）",
+    "guards": [
+      "meta 谈论",
+      "negation 否定",
+      "preventive 预防",
+      "pending 未决",
+      "report 报告叙述",
+      "tech 技术叙述"
+    ]
+  },
+  "limits": {
+    "min_items": 1,
+    "known_misses": [
+      {
+        "sentence": "下次要记得问一澜",
+        "result": "MISS",
+        "why": "口语承诺无 canonical 承诺动词（「要记得」不在 PROMISE_STRICT）"
+      },
+      {
+        "sentence": "改了，一澜说的",
+        "result": "MISS",
+        "why": "隐含纠错：只写「改了」，没写「谁指出」"
+      },
+      {
+        "sentence": "若琢 09-01 回帖承诺…",
+        "result": "MISS",
+        "why": "**引用他人承诺**常被判成我方承诺（v2.4 实测 9 条 promise 里 5 条属此类）"
+      },
+      {
+        "sentence": "承诺并非定时轮询的心跳",
+        "result": "MISS",
+        "why": "讨论「承诺」这个概念，非事件；应由 meta 护栏挡下，实测仍漏"
+      },
+      {
+        "sentence": "墨丘主动更正注入口形状",
+        "result": "MISS",
+        "why": "关系事件但无标准 kind 动词接续模式（G-14/15/16 同类）"
+      }
+    ],
+    "known_fp": [
+      {
+        "type": "任务清单",
+        "evidence": "待办：… / M4 待办：…",
+        "impact": "v2.4 已由 promise 对象约束砍掉，仍有漏网；今由 polarity=禁止 二次拦截"
+      },
+      {
+        "type": "状态行",
+        "evidence": "→ approved / 状态：done",
+        "impact": "decision 误判来源"
+      },
+      {
+        "type": "统计块",
+        "evidence": "互动统计: 发帖 1 · 回帖 0",
+        "impact": "「回复」触发履行内容规则 → 误判 promise"
+      },
+      {
+        "type": "引用他人承诺",
+        "evidence": "若琢 09-01 回帖承诺把圆桌正式化",
+        "impact": "我方词形命中、主语其实是对方；应进 known_misses 且不得计入我方档案"
+      }
+    ]
+  },
+  "metadata": {
+    "genre": "日记语体（会话切片 + 结构化记忆）",
+    "baseline": "csb-memory v2.5-p11 · lib/core/bid-signal.js @ 2026-10-22",
+    "scope": "4704 条记忆 · 2026-06 → 2026-10-22 · 命中数与命中率本节不报（P-13：语言量禁比）"
+  }
+}

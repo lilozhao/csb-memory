@@ -8,6 +8,8 @@
 
 **v1.2.0**（2026-09-05）— v1.1 + **P0-4 不可篡改进化日志** + **P0-2 资产晋升门槛**
 
+**v1.3.0**（2026-10-22）— + **BID 词表位置约束（RFC v2.2 P-11/P-12 落码）**：口径声明三道门 + 提取器位置判定
+
 | 版本 | 日期 | 内容 |
 |:----:|:----:|:-----|
 | v0.4 | 2026-07-31 | 记忆的生命系统：结构性权重、溯源链、权重衰减遗忘、情感标签、折叠层、灵魂空隙、纠错反思 |
@@ -21,11 +23,11 @@
 ```
 csb-memory/
 ├── lib/
-│   ├── core/          # 本地记忆核心（自 csb-a2a-aip 迁移）+ bid-signal.js（关系信号抽取 · SPEC-MEM-0001）
+│   ├── core/          # 本地记忆核心（自 csb-a2a-aip 迁移）+ bid-signal.js（关系信号抽取 · SPEC-MEM-0001）+ bid-lexicon.js（词表位置约束判据 · RFC v2.2 P-11/P-12）
 │   ├── hive/          # 虫巢记忆（v1.0）
 │   ├── propagation/   # 记忆传播（v1.0）
 │   └── raw/           # 全量底仓（v1.1）—— append-only 流水 + 时态 + derived_from
-├── test/              # 316 用例，通过率 100%（2026-10-19 实测）
+├── test/              # 413 用例，通过率 100%（2026-10-22 实测）
 ├── specs/             # SPEC-MEM-0001（BID 关系信号 · 一期 approved v2.0）/ 0002（四态回填 · done）
 ├── examples/          # 示例（含 raw-usage.js）
 ├── scripts/           # sync-daily.js 日常同步（日记/学习/社区三入口）· sync-session.js 会话原文采集（主会话覆盖，A7 修复件）· community-digest.js 社区摘要 · dream.js 蒸馏 · health-check.js 健康巡检（均支持 --agent/CSB_MEMORY_AGENT 适配）
