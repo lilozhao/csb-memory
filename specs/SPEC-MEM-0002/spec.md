@@ -1,7 +1,7 @@
 ---
 spec_id: SPEC-MEM-0002
 title: 承诺四态回填 + 存量信号反抽（二期）
-status: verified
+status: done
 level: M
 version: 1.0
 repo: csb-memory

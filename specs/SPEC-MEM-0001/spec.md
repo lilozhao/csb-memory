@@ -1,7 +1,7 @@
 ---
 spec_id: SPEC-MEM-0001
 title: 记忆条目落 BID 关系信号字段（一期）
-status: approved
+status: implementing
 level: M
 version: 2.0
 repo: csb-memory
@@ -12,7 +12,8 @@ reviewers: [一澜]
 base: main
 supersedes: null
 created: 2026-10-15
-updated: 2026-10-18
+updated: 2026-10-23
+notes_status: "**2026-10-23 状态订正 approved → implementing**（若兰核验）：A1–A18 全部有勾且非空勾，`node test/bid-signal.test.js` 实测 **83 passed / 0 failed**；`lib/core/bid-signal.js` + `test/bid-signal.test.js` 均在仓。A10（README/架构文档同步）已核实：`README.md:26` 明列 `core/bid-signal.js`（关系信号抽取 · SPEC-MEM-0001）。**判为 implementing 而非 done 的理由**：本 spec 之后已连续叠加 P-11/P-12（v1.3.0）、P-15（v1.5.0）等 RFC 落码，实现面已超出本 spec 的 R1–R13 范围，`done` 需按当前真实指针重列一次对照表（下次收口时做）。二期 SPEC-MEM-0002 已 verified，一期作为其前置必然已通。"
 notes: "v2.0 词表精修（2026-10-18 · 观察期实证驱动）：T+3 读数证伪 v1.0 词表——decision 483 条占 61%（确认/同意/共识 命中评审过程叙述）· promise 215 条大量为讨论或引用承诺 · correction 92 条含修正误判。v2.0 加强精度：三类信号均要求主体加动作而非裸关键词，并引入语境否定（无承诺/非承诺）。v1.0 原范围＝只落字段（state 固定 pending），四态回填与存量反抽留二期 SPEC-MEM-0002"
 ---
 

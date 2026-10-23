@@ -13,8 +13,8 @@
  *   ⑤ 备份      — backup.log 今日记录（没备份 = 异常）
  *
  * 输出逻辑（与待办追踪一致）：
- *   ✅ 一切正常 → NO_REPLY（静默）
- *   ⚠️ 发现异常 → 输出具体报告（哪个环节断了）
+ *   ✅ 一切正常 → NO_REPLY（静默，退出码 0）
+ *   ⚠️ 发现异常 → 输出具体报告（哪个环节断了）+ **退出码 3**（cron/CI 可感知，非 0）
  *
  * 用法：
  *   node scripts/health-check.js            # 默认检查昨天（23:30 后跑，检查今天）
@@ -170,16 +170,21 @@ function checkDream(checkDate) {
   const dreamPrev = entries.filter((e) =>
     e.source === 'dream' && (e.tags || []).includes(`day:${prevDate}`)
   ).length;
-  // dream 的 day 标签可能不存在（dream.js 用 day: 标签），fallback：检查 source=dream 的时间戳
+  // 当日底仓是否有可蒸馏流水：无流水 → 0 产出属正常（薄日记/静默日），不是断流
+  let flowsToday = 0;
+  try {
+    const f = path.join(RAW_DIR, `${checkDate}.jsonl`);
+    if (fs.existsSync(f)) flowsToday = fs.readFileSync(f, 'utf8').split('\n').filter(Boolean).length;
+  } catch (e) { /* 读不到按 0 处理 */ }
   const issues = [];
-  // dream 断流判定：昨天有产出今天没有（且今天 RAW 有新增流水）
-  if (dreamPrev > 0 && dreamToday === 0) {
-    issues.push(`dream 蒸馏今日无产出（昨日 ${dreamPrev} 条）`);
+  // dream 断流判定：昨日有产出 + 今日 0 产出 + 当日确实有流水可蒸（否则属正常空跑）
+  if (dreamPrev > 0 && dreamToday === 0 && flowsToday > 0) {
+    issues.push(`dream 蒸馏今日无产出（昨日 ${dreamPrev} 条 · 当日底仓 ${flowsToday} 条流水）`);
   }
   return {
     ok: issues.length === 0,
-    today: dreamToday, prev: dreamPrev, issues,
-    detail: `dream 今日 ${dreamToday} 条 | 昨日 ${dreamPrev} 条`,
+    today: dreamToday, prev: dreamPrev, flowsToday, issues,
+    detail: `dream 今日 ${dreamToday} 条 | 昨日 ${dreamPrev} 条${flowsToday === 0 ? '（当日无流水，未产出属正常）' : ''}`,
   };
 }
 
@@ -234,6 +239,8 @@ function main() {
     console.log('NO_REPLY');
     return;
   }
+  // 有异常项 → 退出码 3（供 cron/CI 感知；NO_REPLY 静默路径仍为 0）
+  if (issues.length > 0) process.exitCode = 3;
 
   // 输出报告
   console.log(`🌡️ 记忆系统健康巡检 · ${checkDate}`);
