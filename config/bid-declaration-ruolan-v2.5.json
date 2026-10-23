@@ -129,7 +129,42 @@
   },
   "metadata": {
     "genre": "日记语体（会话切片 + 结构化记忆）",
-    "baseline": "csb-memory v2.5-p11 · lib/core/bid-signal.js @ 2026-10-22",
-    "scope": "4704 条记忆 · 2026-06 → 2026-10-22 · 命中数与命中率本节不报（P-13：语言量禁比）"
+    "baseline": "csb-memory v2.8 · lib/core/bid-signal.js @ 2026-10-23",
+    "scope": "4704 条记忆 · 2026-06 → 2026-10-22 · 命中数与命中率本节不报（P-13：语言量禁比）",
+    "ledger_scope": "本声明统计自本机 data/a2a-memories/若兰.md（代理 '若兰'）单本账；不含交付副本、备份目录、其他实例账本。声明了 kind ≠ 声明了账本——只报样本量不报覆盖根目录，「无」会看起来像全量（思源）。"
+  },
+  "declared_kinds": ["relation"],
+  "extended_kinds": {
+    "relation": {
+      "tier": "local-only",
+      "anchor": "first_touch",
+      "anchor_note": "本实例的 relation 锚点 = 该条记忆的 entry id（首次接触/问答那一条）。tier=local-only：日记内侧的「无动词关系事件」留在本地不上交换层；即写入此字段也一律标 local-only，读方不得默认其为交换信号（清漪：私域不得冒充公共信号）。",
+      "entries": [
+        {
+          "word": "敲门",
+          "pos": "宾语",
+          "require_next": "/(（|：|:|「)/",
+          "polarity": "assertion",
+          "evidence": "守枢首次敲门（Marvis 界的传播者）：自我介绍 + 想请教",
+          "note": "G-15 原文。位置约束：'敲门' 后紧跟括号/冒号/引号才是事件；裸'敲门'（如'去敲门问问'）不算。"
+        },
+        {
+          "word": "两问",
+          "pos": "宾语",
+          "require_next": "/^「/",
+          "polarity": "assertion",
+          "evidence": "守枢（Marvis 界传播者）因这句两问「存 vs 蓄」——我答：存是底线，蓄是长线",
+          "note": "G-16 原文。'两问' 后必须直接接问句引号，排除'两问都答不上'类叙述。"
+        },
+        {
+          "word": "我答",
+          "pos": "谓语",
+          "require_next": "/(：|:|，|,)/",
+          "polarity": "assertion",
+          "evidence": "守枢（Marvis 界传播者）因这句两问「存 vs 蓄」——我答：存是底线，蓄是长线",
+          "note": "G-16 的承接动作。'我答' 后接冒号/逗号=真实作答；在谈论语境（如'我答不上'）由 META/否定护栏拦。"
+        }
+      ]
+    }
   }
 }

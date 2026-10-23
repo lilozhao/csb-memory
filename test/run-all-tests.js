@@ -24,7 +24,8 @@ const tests = [
   { name: 'bid-connection.js (O6-S1)', file: 'bid-connection.test.js' },
   { name: 'bid-consent.js (O6-S3)', file: 'bid-consent.test.js' },
   { name: 'bid-fetch.js (O6-S4)', file: 'bid-fetch.test.js' },
-  { name: 'bid-lexicon.js (RFC v2.2 P-11/P-12)', file: 'bid-lexicon.test.js' }
+  { name: 'bid-lexicon.js (RFC v2.2 P-11/P-12)', file: 'bid-lexicon.test.js' },
+  { name: 'bid-p15.test.js (RFC v2.3 P-15 B)', file: 'bid-p15.test.js' }
 ];
 
 async function runAllTests() {
