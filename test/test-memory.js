@@ -6,6 +6,8 @@
  * 用法: node test-memory.js
  */
 
+const fs = require('fs');
+const path = require('path');
 const core = require('../lib/core/memory');
 const { add, get, getParsed, parseMemoryText, query, summary, delete: deleteById, feedback, calculateDecayWeight, isForgotten, isCoreIdentity } = require('../lib/core/memory');
 
@@ -248,9 +250,35 @@ async function runTests() {
     assertEqual(r2.entries[2].content, '也正常', '坏块不污染上一条目的正文');
 
     // 真实档案回归：解析条数 > 0 且为空内容的条目为 0
-    const real = getParsed('若兰');
-    assert(real.stats.parsed > 1000, `真实档案解析条数 >1000（实测 ${real.stats.parsed}）`);
-    assertEqual(real.entries.filter((e) => !e.content).length, 0, '真实档案无空内容条目');
+    //
+    // [2026-10-24 舟楫实测反馈] 此前硬编码 getParsed('若兰')：
+    //   · 在别的实例上（舟楫本机 agent 名是"舟楫"）必然读不到 → parsed=0 → 断言失败
+    //   · 421 个测试里唯一必然失败的一项，且失败原因与代码质量无关，是**测试写错了**
+    //   · 更糟：它有副作用——在 data/a2a-memories/ 下留下 61 字节夹具，污染生产目录
+    //
+    // 改为：**哪个实例有真实档案就验哪个**；一个都没有就跳过（不冒充通过，也不误报失败）。
+    // 判据：先枚举 data 目录里 >= 10KB 的档案文件，取其 agent 名。
+    const realAgent = (() => {
+      try {
+        const dir = path.join(__dirname, '..', 'data', 'a2a-memories');
+        if (!fs.existsSync(dir)) return null;
+        const big = fs.readdirSync(dir)
+          .filter(f => f.endsWith('.md'))
+          .map(f => ({ f, size: fs.statSync(path.join(dir, f)).size }))
+          .filter(x => x.size >= 10 * 1024)
+          .sort((a, b) => b.size - a.size);
+        return big.length ? big[0].f.replace(/\.md$/, '') : null;
+      } catch { return null; }
+    })();
+
+    if (realAgent) {
+      const real = getParsed(realAgent);
+      assert(real.stats.parsed > 0, `真实档案「${realAgent}」解析条数 >0（实测 ${real.stats.parsed}）`);
+      assertEqual(real.entries.filter((e) => !e.content).length, 0, '真实档案无空内容条目');
+      console.log(`  ℹ️  真实档案回归：${realAgent}（${real.stats.parsed} 条）`);
+    } else {
+      console.log('  ℹ️  跳过真实档案回归：本机无 >=10KB 档案（新装实例属正常，不算失败）');
+    }
   }
 
 
