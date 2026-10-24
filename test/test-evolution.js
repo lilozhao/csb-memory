@@ -141,6 +141,52 @@ test('重复 link（已 sealed）→ 不重复记事件', () => {
   assert.equal(evos.length, 1, '已 sealed 后重复 link 不应新增审计事件');
 });
 
+
+// ---------- linkMany 批量封口（W-26 2026-10-24）----------
+
+test('linkMany：一批多条只写一次盘，语义等同 link', () => {
+  const a = raw.append({ session: 'batch', type: 'conversation', content: '批量 A' });
+  const b = raw.append({ session: 'batch', type: 'conversation', content: '批量 B' });
+  const c = raw.append({ session: 'batch', type: 'conversation', content: '批量 C' });
+  const evosBefore = readEvo().filter((e) => e.action === 'link').length;
+
+  const res = raw.linkMany([
+    { id: a.id, distilledId: 'mem_ba' },
+    { id: b.id, distilledId: 'mem_bb' },
+    { id: c.id, distilledId: 'mem_bc' },
+  ], { intent: 'dream-distill' });
+
+  assert.equal(res.linked, 3);
+  assert.equal(res.skipped, 0);
+  assert.equal(res.files, 1, '同一天的三条只写一次盘');
+
+  for (const [rid, mid] of [[a.id, 'mem_ba'], [b.id, 'mem_bb'], [c.id, 'mem_bc']]) {
+    const st = raw.get(rid);
+    assert.equal(st.state, 'sealed', '全部封口');
+    assert.ok(st.distilled_to.includes(mid), 'distilled_to 双向索引');
+  }
+  const evos = readEvo().filter((e) => e.action === 'link');
+  assert.equal(evos.length - evosBefore, 3, '每条首次封口记 1 条 link 事件');
+  assert.equal(raw.verifyEvolution().valid, true, '哈希链仍连续');
+});
+
+test('linkMany：幂等（重复批次不再写、不再记事件）', () => {
+  const r = raw.append({ session: 'batch', type: 'conversation', content: '批量幂等' });
+  raw.linkMany([{ id: r.id, distilledId: 'mem_dup' }]);
+  const evosBefore = readEvo().filter((e) => e.action === 'link').length;
+  const res2 = raw.linkMany([{ id: r.id, distilledId: 'mem_dup' }]);
+  assert.equal(res2.linked, 0, '已封口+已链接 → 不重复处理');
+  assert.equal(res2.skipped, 1);
+  assert.equal(res2.files, 0, '无改动不写盘');
+  assert.equal(readEvo().filter((e) => e.action === 'link').length, evosBefore, '不重复记审计事件');
+});
+
+test('linkMany：不存在的流水记账不报错', () => {
+  const res = raw.linkMany([{ id: 'raw_nonexist_batch', distilledId: 'mem_x' }]);
+  assert.equal(res.linked, 0);
+  assert.deepEqual(res.missing, ['raw_nonexist_batch'], '缺失 id 显式返回（P1 拒绝要计分）');
+});
+
 // ---------- 哈希链完整性 ----------
 
 test('哈希链连续（多次操作）', () => {

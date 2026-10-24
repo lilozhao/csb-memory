@@ -23,9 +23,11 @@ async function main() {
   }
 
   // 2. 模拟从注册表拿到候选 Agent（真实环境用 memory-index.whoHas）
+  // P1-3 脱敏（2026-10-24 明鉴评审）：示例不再硬编码真实邻居公网 IP；
+  //   占位符不影响离线降级演示。真实部署请换成注册表返回的节点列表。
   const candidates = [
-    { name: '明德', url: 'http://47.121.28.125:3100' },
-    { name: '清漪', url: 'http://106.12.36.177:3100' },
+    { name: '示例节点 A', url: 'http://agent-a.example:3100' },
+    { name: '示例节点 B', url: 'http://agent-b.example:3100' },
   ];
   console.log(`② 候选 Agent：${candidates.map((c) => c.name).join('、')}`);
 

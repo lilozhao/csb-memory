@@ -6,7 +6,8 @@
  * 用法: node test-memory.js
  */
 
-const { add, get, query, summary, delete: deleteById, feedback, calculateDecayWeight, isForgotten, isCoreIdentity } = require('../lib/core/memory');
+const core = require('../lib/core/memory');
+const { add, get, getParsed, parseMemoryText, query, summary, delete: deleteById, feedback, calculateDecayWeight, isForgotten, isCoreIdentity } = require('../lib/core/memory');
 
 // 测试工具
 let passed = 0;
@@ -218,6 +219,68 @@ async function runTests() {
   assert(delById.success, '用 add 返回的 id 可直接删除');
   const remain = get('回归Agent').filter((e) => e.id === idRes.id);
   assert(remain.length === 0, '删除后无残留');
+
+
+  // ── 档案解析：正文含 '---' 不许丢条目（P1 拒绝要计分 · 2026-10-24）──────
+  // 旧实现 split('\n---\n') 会把正文里的 Markdown 分隔线当块边界，
+  // 错位后的块被静默 continue 掉——2.4MB 真实档案曾只吐出 14/5627 条。
+  {
+    const mk = (id, body) =>
+      '---\nid: "' + id + '"\ntype: event\ntimestamp: "2026-10-01T00:00:00.000+08:00"\nsource: test\nconfidence: high\ntags: [t]\nvisibility: public\n---\n\n' + body + '\n';
+    const text = mk('mem_a', '第一段\n\n---\n\n第二段（分隔线在正文里）') + mk('mem_b', '正常内容') + mk('mem_c', '也正常');
+
+    const { entries, stats } = parseMemoryText(text);
+    assertEqual(entries.length, 3, "正文含 '---' 时 3 条全部解析出来");
+    assertEqual(entries.find((e) => e.id === 'mem_a').content.includes('第二段'), true, '正文被分隔线切断后仍完整保留');
+    assertEqual(stats.skipped.length, 0, '无跳过项');
+
+    // 坏块必须记账（不静默丢弃）
+    const broken = text + '---\nsource: test\n---\n\n没有 id 的块\n';
+    const r2 = parseMemoryText(broken);
+    assertEqual(r2.entries.length, 3, '坏块不影响其他条目');
+    // 文件末尾的坏块会被上一条目的正文捕获（结构上无法再切），因此可能是
+    // orphan_block_no_id 也可能是 no_id_in_frontmatter——**关键是有记账、有原因**，
+    // 不能是静默丢弃（旧实现正是静默吞掉）。
+    assert(
+      r2.stats.skipped.length >= 1 && ['orphan_block_no_id', 'no_id_in_frontmatter', 'id_unparsable'].includes(r2.stats.skipped[0].reason),
+      `坏块计入 skipped 且带原因（${r2.stats.skipped[0] && r2.stats.skipped[0].reason}）`
+    );
+    assertEqual(r2.entries[2].content, '也正常', '坏块不污染上一条目的正文');
+
+    // 真实档案回归：解析条数 > 0 且为空内容的条目为 0
+    const real = getParsed('若兰');
+    assert(real.stats.parsed > 1000, `真实档案解析条数 >1000（实测 ${real.stats.parsed}）`);
+    assertEqual(real.entries.filter((e) => !e.content).length, 0, '真实档案无空内容条目');
+  }
+
+
+  // ── 追加缓冲（W-26 第二阶段）：批量写盘但不丢条目、格式不变 ──────────
+  {
+    const before = get('回归Agent').length;
+    core.beginBatch();
+    const r1 = core.add({ agent: '回归Agent', type: 'event', content: '缓冲测试 A', source: 'test' });
+    const r2 = core.add({ agent: '回归Agent', type: 'event', content: '缓冲测试 B', source: 'test' });
+    assertEqual(core.batchStatus().pending, 2, '批量窗口内 2 条在缓冲中未落盘');
+    const mid = get('回归Agent').length;
+    assertEqual(mid, before, '未 flush 前档案里读不到（内存缓冲）');
+    const f = core.endBatch();
+    assertEqual(f.flushed, 2, 'endBatch 落盘 2 条');
+    const after = get('回归Agent');
+    assertEqual(after.length, before + 2, 'flush 后两条都能读回');
+    const a = after.find((e) => e.id === r1.id);
+    const b = after.find((e) => e.id === r2.id);
+    assert(a && a.content === '缓冲测试 A', '缓冲条目 A 内容完整');
+    assert(b && b.content === '缓冲测试 B', '缓冲条目 B 内容完整');
+    assertEqual(core.batchStatus().pending, 0, 'flush 后缓冲清空');
+
+    // 格式等价：缓冲写入的条目与直接写入的条目结构一致（都能被 get 解析出 id/type/source）
+    assert(a.type === 'event' && a.source === 'test', '缓冲条目 frontmatter 字段完整');
+
+    // 清理（测试隔离：本段在测试15之前执行，不清会污染「三条记忆」计数）
+    deleteById(r1.id);
+    deleteById(r2.id);
+    assertEqual(get('回归Agent').length, before, '清理后回到测试前条数');
+  }
 
   // 测试结果
   console.log('\n=== 测试结果 ===');

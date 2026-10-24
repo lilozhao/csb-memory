@@ -52,7 +52,9 @@ function mapType(rawType) {
 }
 
 // 蒸馏一条流水 → 返回结论记忆（或 null 跳过）
-function distill(stream) {
+// W-26：不再当场 raw.link（那条路每条都要全量扫底仓+重写整天文件），
+// 改为把 (流水id → 结论id) 收进 pending，由 dreamDate 末尾一次 linkMany 批量封口。
+function distill(stream, pending) {
   // 已蒸馏过的跳过（幂等）
   if (stream.distilled_to && stream.distilled_to.length > 0) return null;
   if (!DISTILLABLE.includes(stream.type)) return null;
@@ -77,8 +79,9 @@ function distill(stream) {
     verification_evidence: stream.verification_evidence, // P0-2：晋升记录带证据（落档 frontmatter）
   };
   const result = core.add(entry);
-  // 底仓自动封口 + 双向索引
-  raw.link(stream.id, result.id, { intent: 'dream-distill' });
+  // 底仓封口 + 双向索引：延后批量执行（semantics 等同 raw.link）
+  if (pending) pending.push({ id: stream.id, distilledId: result.id });
+  else raw.link(stream.id, result.id, { intent: 'dream-distill' });
   return { streamId: stream.id, memId: result.id, type };
 }
 
@@ -88,8 +91,13 @@ function dreamDate(dateStr) {
   let skipped = 0;
   let gated = 0;
   const gatedIds = [];
+  const pending = [];
+  // W-26 第二阶段：一天的结论记忆先攒在内存，当天结束一次性追加到档案
+  // （旧实现每条 core.add 都要重读重写 2.5MB 档案，实测 142ms/条）
+  core.beginBatch();
+  try {
   for (const s of streams) {
-    const r = distill(s);
+    const r = distill(s, pending);
     if (r) {
       if (r.skipped) {
         skipped++;
@@ -99,11 +107,24 @@ function dreamDate(dateStr) {
         }
       } else {
         distilled++;
-        console.log(`  🌙 [${r.type}] ${s.id} → ${r.memId}（已封口）`);
       }
     } else {
       skipped++;
     }
+  }
+  } finally {
+    const f = core.endBatch(); // 无论成败都落盘（绝不静默丢缓冲）
+    if (f && f.flushed > 0) process.stderr.write(`  💾 档案落盘 ${f.flushed} 条\n`);
+  }
+  // W-26：单日所有改动一次写盘（一天只重写一次文件），逐条打印在写盘后
+  if (pending.length) {
+    const res = raw.linkMany(pending, { intent: 'dream-distill' });
+    // 逐条明细只在单日模式打（--all 时 886 条全打会把日志淹掉）
+    if (!process.argv.includes('--all')) {
+      for (const p of pending) console.log(`  🌙 ${p.id} → ${p.distilledId}（已封口）`);
+    }
+    if (res.missing.length) console.log(`  ⚠️ ${res.missing.length} 条流水未找到（未封口）：${res.missing.slice(0, 3).join(', ')}`);
+    if (res.errors.length) console.log(`  ⚠️ ${res.errors.length} 条链路异常：${JSON.stringify(res.errors.slice(0, 3))}`);
   }
   // P0-2：晋升率告警（可验证资产 <80% 带证据 = 流水质量信号）
   if (gated > 0) {
@@ -113,6 +134,16 @@ function dreamDate(dateStr) {
     }
   }
   return { total: streams.length, distilled, skipped, gated, gatedIds };
+}
+
+// 进度行格式化（2026-10-24）：全量 95 天曾 14 分钟零输出，外层 `| tail` 一压就完全看不见进展。
+// 单日模式不打（几秒就完）；--all 模式每天一行，stderr 输出（不干扰 stdout 汇总）。
+function fmtProgress(i, total, dateStr, r, t0) {
+  const elapsed = (Date.now() - t0) / 1000;
+  const eta = i > 0 ? (elapsed / i) * (total - i) : 0;
+  const pct = ((i / total) * 100).toFixed(0).padStart(3);
+  return `[${String(i).padStart(3)}/${total}] ${pct}% ${dateStr} 流水${String(r.total).padStart(3)} → 蒸${String(r.distilled).padStart(3)} 跳过${String(r.skipped).padStart(3)}` +
+    `  | 已用${elapsed.toFixed(0)}s 预计剩余${eta.toFixed(0)}s`;
 }
 
 function main() {
@@ -130,16 +161,23 @@ function main() {
       process.exit(1);
     }
     const dates = fs.readdirSync(dir)
-      .filter((f) => f.endsWith('.jsonl'))
+      // 只认 YYYY-MM-DD.jsonl：raw-evolution.jsonl 是哈希链审计日志，不是当日流水，
+      // 混进来会被当成「一天」扫一遍（2026-10-24 修，--all 曾多扫一遍审计日志）
+      .filter((f) => /^\d{4}-\d{2}-\d{2}\.jsonl$/.test(f))
       .map((f) => f.replace('.jsonl', ''))
       .sort();
     let total = 0, distilled = 0;
-    for (const d of dates) {
+    const t0 = Date.now();
+    console.log(`📅 待处理 ${dates.length} 天（${dates[0]} ~ ${dates[dates.length - 1]}）\n`);
+    for (let i = 0; i < dates.length; i++) {
+      const d = dates[i];
       const r = dreamDate(d);
       total += r.total;
       distilled += r.distilled;
+      process.stderr.write(fmtProgress(i + 1, dates.length, d, r, t0) + '\n');
     }
-    console.log(`\n📊 全量做梦完成：${dates.length} 天流水，蒸馏 ${distilled} 条结论`);
+    const cost = ((Date.now() - t0) / 1000).toFixed(0);
+    console.log(`\n📊 全量做梦完成：${dates.length} 天流水（${total} 条），蒸馏 ${distilled} 条结论，耗时 ${cost}s`);
   } else {
     const r = dreamDate(dateStr);
     console.log(`\n📊 ${dateStr}：流水 ${r.total} 条，蒸馏 ${r.distilled} 条结论，跳过 ${r.skipped} 条`);

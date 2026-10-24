@@ -143,7 +143,10 @@ function appendToRaw(dateStr, ev, type) {
     raw.append({
       ts: `${dateStr}T00:00:00.000Z`, // 按内容日期归档（而非当前时间）
       session: 'daily-sync',
-      type: ['decision', 'milestone'].includes(type) ? type : 'conversation',
+      // 2026-10-24 修（0 新增根因）：v1.1 类型全量落库，不再把 lesson/discovery/fix/promise/todo
+      // 压平成 conversation——dream.js 的 DISTILLABLE 只看 type，压平即等于「天生不可蒸馏」。
+      // ⚠️ 若改回白名单，请同步改 dream.js 的 DISTILLABLE，否则做梦机制会再次空转。
+      type: type || 'conversation',
       content: fullContent,
       state: 'burning',
       meta: { section: ev.section || '', important: true },
