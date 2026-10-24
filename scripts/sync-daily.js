@@ -31,7 +31,9 @@ const path = require('path');
 const core = require('../lib/core/memory');
 const raw = require('../lib/raw/raw');
 
-const MEMORY_DIR = path.join(__dirname, '..', '..', 'memory');
+// 本地补丁（美硅 2026-10-24）：允许用 MEMORY_DIR 环境变量指定日记源目录。
+// 上游默认取 <repo>/../memory；美硅的日记在 <workspace>/memorynew/，cron 靠这个变量指路。
+const MEMORY_DIR = process.env.MEMORY_DIR || path.join(__dirname, '..', '..', 'memory');
 const LEARNING_DIR = path.join(MEMORY_DIR, 'learning');
 
 // agent 可配置（--agent 参数或环境变量），默认若兰
