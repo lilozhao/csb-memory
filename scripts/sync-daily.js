@@ -67,6 +67,26 @@ function structuralWeight(type, text) {
   return 0.0;
 }
 
+// 拆解一条列表项：分出「标题」与「内容」
+// 2026-10-29 修：旧正则 `([^*]+)` 会在**行内第一个 `*` 处截断**，
+// 于是 `- **标题**：内容` 被拆成 title="标题"、rest="**标题**：内容" → 拼出「：：**」这类脏字符。
+// 现在：① 整行捕获 ② 找**第一个不在 `**` 强调区间内**的冒号 ③ 去掉全部 `**` 强调标记。
+function splitBullet(raw) {
+  const s = String(raw).trim();
+  let inBold = false;
+  let idx = -1;
+  for (let i = 0; i < s.length; i++) {
+    if (s.startsWith('**', i)) { inBold = !inBold; i++; continue; }
+    if (!inBold && (s[i] === '：' || s[i] === ':')) { idx = i; break; }
+  }
+  let title = idx >= 0 ? s.slice(0, idx) : s;
+  let rest = idx >= 0 ? s.slice(idx + 1) : '';
+  const clean = t => t.replace(/\*\*/g, '').trim();
+  title = clean(title);
+  rest = clean(rest);
+  return { title, rest };
+}
+
 // 提取日期文件中的事件行（时间戳行 或 列表项）
 function extractEvents(filePath) {
   const text = fs.readFileSync(filePath, 'utf-8');
@@ -88,14 +108,12 @@ function extractEvents(filePath) {
     // 时间戳事件行：**HH:MM** 或 - **HH:MM** 或 - HH:MM
     const ts = line.match(/^\s*[-*]?\s*\*{0,2}(\d{1,2}:\d{2})\*{0,2}\s*(.*)/);
     // 列表项（顶层有序/无序）：1. **标题**：内容 或 - **标题**：内容（嵌套缩进跳过）
-    const bullet = line.match(/^\s{0,2}(?:\d+\.\s+|[-*]\s+)(?:\*\*)?([^*]+)(?:\*\*)?[：:]?\s*(.*)/);
+    const bullet = line.match(/^\s{0,2}(?:\d+\.\s+|[-*]\s+)(.+)$/);
     if (ts && ts[2].trim()) {
       if (currentEvent) events.push(currentEvent);
       currentEvent = { time: ts[1], text: ts[2].trim(), section: currentSection };
     } else if (bullet && bullet[1].trim().length >= 4) {
-      const title = bullet[1].trim();
-      const rest = (bullet[2] || '').trim();
-      // 标题本身含描述（如 "**协议整合**：xxx"）→ 合并；否则单独成条
+      const { title, rest } = splitBullet(bullet[1]);
       if (currentEvent) events.push(currentEvent);
       currentEvent = {
         time: '',
