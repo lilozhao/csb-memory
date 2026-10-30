@@ -111,7 +111,12 @@ function extractEvents(filePath) {
     const bullet = line.match(/^\s{0,2}(?:\d+\.\s+|[-*]\s+)(.+)$/);
     if (ts && ts[2].trim()) {
       if (currentEvent) events.push(currentEvent);
-      currentEvent = { time: ts[1], text: ts[2].trim(), section: currentSection };
+      // 2026-10-30 修：时间戳行过去**不剥 `**` 强调标记**（只有列表项走 splitBullet 才剥），
+      // 于是 `**08:10 每日统计 cron**：**新链路...**` 这类行会把开闭标记留在正文里 →
+      // `**：**` 脏文本 + `**` 数量为奇数 → 被 dream.js 原样蒸馏成永久结论。
+      // 判据：RAW 底仓里出现 `**：` 或 `**` 计数为奇数 = 真损坏（不是合法 markdown）。
+      // 修法：与列表项一致，统一去掉全部 `**` 标记。
+      currentEvent = { time: ts[1], text: ts[2].replace(/\*\*/g, '').trim(), section: currentSection };
     } else if (bullet && bullet[1].trim().length >= 4) {
       const { title, rest } = splitBullet(bullet[1]);
       if (currentEvent) events.push(currentEvent);
