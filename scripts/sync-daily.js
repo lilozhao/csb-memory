@@ -77,7 +77,14 @@ function splitBullet(raw) {
   let idx = -1;
   for (let i = 0; i < s.length; i++) {
     if (s.startsWith('**', i)) { inBold = !inBold; i++; continue; }
-    if (!inBold && (s[i] === '：' || s[i] === ':')) { idx = i; break; }
+    if (inBold) continue;
+    if (s[i] === '：') { idx = i; break; }
+    // 2026-10-31 修：ASCII 冒号只在「后一位不是数字」时才当分隔符。
+    // 否则时间戳会被切碎 —— `... 21:40:35 崩` 曾被切成 title="...21" + rest="40:35 崩"，
+    // 合成后写成「21：40:35」→ 事实被改写（时间戳是记忆里最不能错的一类数据）。
+    // 判据：分隔符必须满足「冒号后一位不是数字」；全角「：」不受此限
+    // （中文正文里「标题：内容」后面接数字是常态，例如「18：40 开始」）。
+    if (s[i] === ':' && !(s[i + 1] >= '0' && s[i + 1] <= '9')) { idx = i; break; }
   }
   let title = idx >= 0 ? s.slice(0, idx) : s;
   let rest = idx >= 0 ? s.slice(idx + 1) : '';
