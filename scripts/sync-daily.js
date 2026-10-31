@@ -67,31 +67,24 @@ function structuralWeight(type, text) {
   return 0.0;
 }
 
-// 拆解一条列表项：分出「标题」与「内容」
-// 2026-10-29 修：旧正则 `([^*]+)` 会在**行内第一个 `*` 处截断**，
-// 于是 `- **标题**：内容` 被拆成 title="标题"、rest="**标题**：内容" → 拼出「：：**」这类脏字符。
-// 现在：① 整行捕获 ② 找**第一个不在 `**` 强调区间内**的冒号 ③ 去掉全部 `**` 强调标记。
-function splitBullet(raw) {
-  const s = String(raw).trim();
-  let inBold = false;
-  let idx = -1;
-  for (let i = 0; i < s.length; i++) {
-    if (s.startsWith('**', i)) { inBold = !inBold; i++; continue; }
-    if (inBold) continue;
-    if (s[i] === '：') { idx = i; break; }
-    // 2026-10-31 修：ASCII 冒号只在「后一位不是数字」时才当分隔符。
-    // 否则时间戳会被切碎 —— `... 21:40:35 崩` 曾被切成 title="...21" + rest="40:35 崩"，
-    // 合成后写成「21：40:35」→ 事实被改写（时间戳是记忆里最不能错的一类数据）。
-    // 判据：分隔符必须满足「冒号后一位不是数字」；全角「：」不受此限
-    // （中文正文里「标题：内容」后面接数字是常态，例如「18：40 开始」）。
-    if (s[i] === ':' && !(s[i + 1] >= '0' && s[i + 1] <= '9')) { idx = i; break; }
-  }
-  let title = idx >= 0 ? s.slice(0, idx) : s;
-  let rest = idx >= 0 ? s.slice(idx + 1) : '';
-  const clean = t => t.replace(/\*\*/g, '').trim();
-  title = clean(title);
-  rest = clean(rest);
-  return { title, rest };
+// 取一条列表项的正文：**逐字保真**，只去掉 `**` 强调标记。
+//
+// 2026-11-01 修（事实被改写，第三次踩「切分+重组有损」这一类坑）：
+// 旧实现把 bullet 拆成 title/rest 再用**全角「：」重组**，于是三种事实被改写：
+//   ① bullet 里的 ASCII 冒号被换成全角「：」—— `https://x` → `https：//x`、
+//      `agent:main:main:heartbeat` → `agent：main:main:heartbeat`、`success:true` → `success：true`；
+//   ② 行尾的「：」被整段丢掉（rest 为空 → 只剩 title）；
+//   ③ **加粗前缀里含冒号**时切分点会落到后面的标识符里
+//      （如 `- **已确认：…** …… \`agent:main:main:heartbeat\`` → 切在 `agent:` 上）。
+// 根因：**任何「切分 + 重组」都是有损的**；而 title/rest 这对值在本脚本里**只用来拼回 text**
+// （`inferType` / `isImportant` / `appendToRaw` 全部只看 ev.text）—— 切分本身毫无收益。
+// 修法：正文一律 = 原样去掉 `**` 标记 → 天然逐字保真，
+// 也不必再判断「哪个冒号才是分隔符」（此前为躲时间戳还加过「冒号后一位不是数字」的启发式，
+// 结果 `https://` / `success:true` / `server.js:2024` 全部中招）。
+//
+// 判据：修完后 `cleanBullet(raw)` 必须与「源行去掉 `**`」**逐字相同**（不含任何重新拼接）。
+function cleanBullet(raw) {
+  return String(raw).replace(/\*\*/g, '').trim();
 }
 
 // 提取日期文件中的事件行（时间戳行 或 列表项）
@@ -125,11 +118,12 @@ function extractEvents(filePath) {
       // 修法：与列表项一致，统一去掉全部 `**` 标记。
       currentEvent = { time: ts[1], text: ts[2].replace(/\*\*/g, '').trim(), section: currentSection };
     } else if (bullet && bullet[1].trim().length >= 4) {
-      const { title, rest } = splitBullet(bullet[1]);
+      // 2026-11-01 修：正文逐字保真（不再切分/重组，理由见 cleanBullet 上方注释）
+      const text = cleanBullet(bullet[1]);
       if (currentEvent) events.push(currentEvent);
       currentEvent = {
         time: '',
-        text: rest ? `${title}：${rest}` : title,
+        text,
         section: currentSection,
       };
     }

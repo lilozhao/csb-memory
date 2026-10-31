@@ -16,6 +16,7 @@ const tests = [
   { name: 'hive.js (v1.0)', file: 'test-hive.js' },
   { name: 'propagation.js (v1.0)', file: 'test-propagation.js' },
   { name: 'raw.js (v1.1)', file: 'test-raw.js' },
+  { name: 'sync-fidelity.js (2026-11-01 逐字保真)', file: 'test-sync-fidelity.js' },
   { name: 'evolution.js (P0-4)', file: 'test-evolution.js' },
   { name: 'experience.js (Harness² C3)', file: 'test-experience.js' },
   { name: 'promotion-gate.js (P0-2)', file: 'test-promotion.js' },
