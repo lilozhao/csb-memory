@@ -27,7 +27,7 @@ csb-memory/
 │   ├── hive/          # 虫巢记忆（v1.0）
 │   ├── propagation/   # 记忆传播（v1.0）
 │   └── raw/           # 全量底仓（v1.1）—— append-only 流水 + 时态 + derived_from
-├── test/              # 413 用例，通过率 100%（2026-10-22 实测）
+├── test/              # 476 用例，通过率 100%（2026-10-26 实测）
 ├── specs/             # SPEC-MEM-0001（BID 关系信号 · 一期 approved v2.0）/ 0002（四态回填 · done）
 ├── examples/          # 示例（含 raw-usage.js）
 ├── scripts/           # sync-daily.js 日常同步（日记/学习/社区三入口）· sync-session.js 会话原文采集（主会话覆盖，A7 修复件）· community-digest.js 社区摘要 · dream.js 蒸馏 · health-check.js 健康巡检（均支持 --agent/CSB_MEMORY_AGENT 适配）
@@ -111,9 +111,13 @@ const results = await csbMemory.hive.query('中医');
 node test/run-all-tests.js
 ```
 
-覆盖：核心 39 用例 + 生命周期 21 + 价值评分 25 + HIVE 9 + 传播 19 + RAW 16（v1.1）+ 演化 17（P0-4）+ 晋升门 22（P0-2）＝ **168 用例**。
+覆盖：**当前全量：476 用例 100% 通过**（`npm test` 末行「总计: 476」，2026-10-26 实测）。
+构成：核心 56 + 生命周期 21 + 价值评分 25 + HIVE 9 + 传播 19 + RAW 16（v1.1）+ 演化 20（P0-4）
+＋ Harness² 经验 18 + 晋升门 22（P0-2）＝ 206
+＋ BID 系列（SPEC-MEM-0001/0002 + O6-S1/S3/S4 + RFC v2.2 P-11/P-12 + v2.3 P-15）270
 
 > 📌 **数字核验**（2026-09-11 一澜指出数字不实后修正）：此前写「126」漏计 P0-4/P0-2 两个模块（17+22），核心也从 36 长到 39；`examples/ruolan-memory-demo.js` 里的「103」同步修正。
+> 2026-10-26 修正：168 → **476**（BID 系列 7 个套件 + Harness² 经验进仓后未回写），由周一「README 数字核验」cron 跑真实测试发现。
 > 校验方式：`node scripts/verify-readme-numbers.js`（工作区）或直接 `npm test` 看末行总数。
 
 ## 日常使用
