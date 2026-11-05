@@ -6,6 +6,55 @@
 
 ---
 
+## v1.6.0（2026-11-05）— 访问计数写回：把「遗忘」从死代码救活
+
+**提交**：`b542fc3`
+
+**背景**：`query()` 里 `results.forEach(e => updateAccess(e))` **只改内存对象，从不落盘**。
+实测 `data/a2a-memories/若兰.md` 6,885 条中 **6,884 条 `access_count: 0`**（另 1 条缺字段）。
+后果链：计数永远 0 → `lifecycle.js` 的「30 天未访问→归档」「权重衰减→遗忘」**一条也判不出来**
+→ 整个遗忘机制（v0.4 就写好的五态机）**是死的**。
+诊断报告：`projects/csb-memory-sleep-dream/memory-sleep-quant-report-v1.md`
+
+**变更**（`lib/core/memory.js`）：
+
+| 项 | 内容 |
+|---|---|
+| `query()` | 内存对象照旧更新（当次返回值不变），同时把 `(档案, id)` 计入待写回缓冲 |
+| `patchAccessCounts()` | **定点行替换**，只改 `access_count` / `last_access` 两行 |
+| `flushAccess()` | 原子写（tmp + rename），返回 `{files, entries, missing}` |
+| `accessStatus()` | 可观测：还有几条没落盘 |
+| flush 时机 | 累计 500 条 / 60 秒 / **进程退出钩子**（三重兜底） |
+| 导出 | `flushAccess` / `accessStatus` / `patchAccessCounts` |
+
+**两条硬约束（写进代码注释了）**：
+1. **不许整篇重写**：`toFrontMatter()` 只认固定字段，重放会抹掉 `lifecycle_state`/`archived_at` 等扩展字段（实测真实档案里有 2 条）。
+   ⇒ 只做定点行替换，其余字节一个不碰。
+2. **不许每次 query 都写 4.5MB**：实测读 190ms / 写 6ms ⇒ 攒批 + 退出兜底。
+
+**测试**：`test/test-access-writeback.js` **14/14**，全量 **490/490**（原 476）。
+
+六类断言：
+- A1 写回真的落盘（不是只改内存）
+- A2 **只改两行**：`lifecycle_state`/`archived_at`/正文全保留；去掉两字段后**全文逐字一致**；字节差量 <200B
+- A3 多次 query **累加**（不是覆盖成 1）
+- A4 找不到 id 时 `missing` 计数，**不静默**
+- A5 **反向自测**：把补丁换成空实现 → 必须变红（已实测「撤掉修复 → 退出码 1；恢复 → 0」）
+- A6 flush 后缓冲清空
+
+**真实档案端到端**（2026-11-05 22:12）：
+`query({agent:'若兰', type:'lesson', limit:3})` → 3 条 `access_count` 0→1 · 条目数 6885 不变 · `lifecycle_state` 2→2 不变 · **字节数完全不变**。
+
+**⚠️ 诚实边界（必须写清）**：
+本修复只让 `query()` 能写回。**但当前生产路径没有调用 `query()`**——
+`sync-daily`/`health-check`/`dream` 用的是 `get()`（去重扫描，不算回忆），
+而 `memory_search` 走 **qmd 直接索引 .md 文件**，完全绕过 core。
+⇒ **计数器现在仍不会被自动更新**。要让计数真正跑起来，还需要第二步：
+给「真正的回忆路径」接线（qmd 检索后回写 / 或新增 A2A memory query 端点）。
+本版只解决「通路存在且安全」，不宣称「计数已自动工作」。
+
+---
+
 ## v1.5.0（2026-10-23）— RFC v2.3 P-15 落码：kind 枚举 B
 
 **提交**：`bb229b5`

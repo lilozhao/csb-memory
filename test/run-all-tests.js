@@ -11,6 +11,7 @@ const path = require('path');
 
 const tests = [
   { name: 'memory.js (core)', file: 'test-memory.js' },
+  { name: 'access-writeback (2026-11-05)', file: 'test-access-writeback.js' },
   { name: 'lifecycle.js (core)', file: 'test-lifecycle.js' },
   { name: 'value-scorer.js (core)', file: 'test-value-scorer.js' },
   { name: 'hive.js (v1.0)', file: 'test-hive.js' },
