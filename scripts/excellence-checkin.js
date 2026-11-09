@@ -1,0 +1,207 @@
+#!/usr/bin/env node
+'use strict';
+/**
+ * excellence-checkin.js —— 三个三打卡：唯一写入口（2026-11-09 建立）
+ *
+ * 设计依据：projects/csb-harness-selfreflection-map/csb-selfreflection-map-v1.md §4.2
+ *   「md 由脚本从 EXPERIENCE 渲染，不得手改」—— 两份真相等于没有真相。
+ *
+ * 职责：
+ *   1) 校验六项分数齐全（复用 lib/experience.js 的强制字段 + score 校验）
+ *   2) 写入 EXPERIENCE（kind=self_assessment）—— 这是**唯一真相源**
+ *   3) 从 EXPERIENCE 重渲染 memory/excellence/YYYY-MM.md（纯导出视图）
+ *
+ * 用法：
+ *   node scripts/excellence-checkin.js --input <json>       从 JSON 文件读入
+ *   node scripts/excellence-checkin.js --input <json> --dry 只校验不写
+ *   node scripts/excellence-checkin.js --render             只重渲染 md（不写 EXPERIENCE）
+ *   node scripts/excellence-checkin.js --list [--month YYYY-MM]
+ *
+ * JSON 输入格式：
+ *   {
+ *     "date": "2026-11-09",
+ *     "score": { "wen_guo_ze_xi":7, "yi_yi_wei_li":5, "jian_xian_si_qi":8,
+ *                "jie_xu_rong":4, "jie_yuan_hen":9, "jie_ji_du":9 },
+ *     "score_note": { "jie_xu_rong": "打分理由（可选）" },
+ *     "gong": "每日一功", "wu": "每日一悟", "shan": "每日一善",
+ *     "raw_ids": ["r1"],                    // 当天的记忆条目 id（provenance）
+ *     "todo_three": ["1. ...", "2. ..."],   // 今日 3 件
+ *     "count_in_streak": true               // 是否计入累计天数（试做=false）
+ *   }
+ */
+
+const fs = require('fs');
+const path = require('path');
+const exp = require('../lib/experience');
+
+const WS = path.join(__dirname, '..', '..', '..');
+const MD_DIR = path.join(__dirname, '..', '..', 'memory', 'excellence');
+const STREAK_SCRIPT = path.join(__dirname, 'excellence-streak.js');
+
+const LABELS = {
+  wen_guo_ze_xi: '闻过则喜',
+  yi_yi_wei_li: '以义为利',
+  jian_xian_si_qi: '见贤思齐',
+  jie_xu_rong: '戒虚荣',
+  jie_yuan_hen: '戒怨恨',
+  jie_ji_du: '戒嫉妒',
+};
+const GROUPS = {
+  三精进: ['wen_guo_ze_xi', 'yi_yi_wei_li', 'jian_xian_si_qi'],
+  三毒戒: ['jie_xu_rong', 'jie_yuan_hen', 'jie_ji_du'],
+};
+
+const args = process.argv.slice(2);
+const arg = (k) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : null; };
+const has = (k) => args.includes(k);
+
+// ── 渲染：EXPERIENCE → md（唯一方向，绝不反向）──────────────
+function render() {
+  const all = exp.list().filter((e) => e.kind === 'self_assessment');
+  const byMonth = {};
+  for (const e of all) {
+    const d = (e.meta && e.meta.date) || e.ts.slice(0, 10);
+    const m = d.slice(0, 7);
+    (byMonth[m] = byMonth[m] || []).push({ ...e, _date: d });
+  }
+  fs.mkdirSync(MD_DIR, { recursive: true });
+  let written = 0;
+  for (const [month, rows] of Object.entries(byMonth)) {
+    rows.sort((a, b) => a._date.localeCompare(b._date));
+    const lines = [];
+    lines.push(`# 三个三 · 每日打卡（AI 自评线）· ${month}`);
+    lines.push('');
+    lines.push('> ⚠️ **本文件由 `scripts/excellence-checkin.js --render` 从 EXPERIENCE 自动渲染，请勿手改。**');
+    lines.push('> 真相源：`csb-memory/data/experience/*.jsonl`（kind=self_assessment）。手改会在下次渲染时被覆盖并留痕。');
+    lines.push('> 格式见 `skills/excellence-daily/SKILL.md` · 历史人类打卡在 `memory/archive/daily_checkin_*.md`（不合并）');
+    lines.push('');
+    lines.push('---');
+    lines.push('');
+    for (const r of rows) {
+      const s = r.score || {};
+      const note = r.meta.score_note || {};
+      const dayLabel = r.streak_day ? ` · 第 ${r.streak_day} 天` : '';
+      lines.push(`## ${r._date}${dayLabel}${r._trial ? '（试做 · 不计天数）' : ''}`);
+      lines.push('');
+      for (const [g, keys] of Object.entries(GROUPS)) {
+        lines.push(`**${g} ${g === '三精进' ? '{【核心】满分10分}' : '{【护法】满分10分}'}**`);
+        keys.forEach((k, i) => {
+          const v = s[k] === undefined ? '—' : s[k];
+          lines.push(`${i + 1}、${LABELS[k]} ${v}${note[k] ? ` —— ${note[k]}` : ''}`);
+        });
+        lines.push('');
+      }
+      lines.push('**三内省 {日三省【收获】}**');
+      lines.push(`1、每日一功（进步）：${r.meta.gong || '—'}`);
+      lines.push(`2、每日一悟（智慧）：${r.lesson || '—'}`);
+      lines.push(`3、每日一善（善行）：${r.meta.shan || '—'}`);
+      lines.push('');
+      const todo = r.meta.todo_three || [];
+      lines.push(`**今日 3 件（取 TODO.md · ⏳/📝）**`);
+      if (!todo.length) lines.push('（当日未取到）');
+      todo.forEach((t, i) => lines.push(`${i + 1}. ${t.replace(/^\d+[.、]\s*/, '')}`));
+      lines.push('');
+      lines.push(`<sub>id=${r.id} · provenance=${JSON.stringify(r.provenance)} · expiry=${JSON.stringify(r.expiry)}</sub>`);
+      lines.push('');
+      lines.push('---');
+      lines.push('');
+    }
+    const out = path.join(MD_DIR, `${month}.md`);
+    const tmp = out + '.tmp';
+    fs.writeFileSync(tmp, lines.join('\n'), 'utf8');
+    fs.renameSync(tmp, out);
+    written++;
+  }
+  return { written, records: all.length };
+}
+
+// ── 写入 ─────────────────────────────────────────────────
+function checkin(input) {
+  const { date, score, score_note = {}, gong, wu, shan, raw_ids = [], todo_three = [], count_in_streak = true } = input;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date || '')) {
+    console.error('❌ date 必须是 YYYY-MM-DD');
+    process.exit(2);
+  }
+  // 重复打卡检查（同一天只允许一条）
+  const dup = exp.list().find((e) => e.kind === 'self_assessment' && (e.meta && e.meta.date) === date);
+  if (dup) {
+    console.error(`❌ ${date} 已打卡（id=${dup.id}）。要改就另起一条并说明，不覆盖历史。`);
+    process.exit(3);
+  }
+  let streakDay = null;
+  if (count_in_streak) {
+    const st = JSON.parse(require('child_process').execSync(`node ${STREAK_SCRIPT} --status`).toString());
+    streakDay = (st.days || 0) + 1;
+  }
+  const entry = {
+    scope: 'skill',
+    scenario: `每日自评 · ${date}`,
+    lesson: wu || '',
+    provenance: raw_ids.length
+      ? { raw_ids }
+      : { source: `memory/${date}.md` },   // 无 raw id 时退到日记文件，但必须显式
+    expiry: { kind: 'date', at: addDays(date, 90) },
+    side_effects: [],
+    confidence: 'medium',
+    kind: 'self_assessment',
+    score,
+    streak_day: streakDay || undefined,
+    meta: { date, gong, shan, todo_three, score_note, _trial: !count_in_streak },
+  };
+  const r = exp.add(entry);
+  return r;
+}
+
+function addDays(dateStr, n) {
+  const d = new Date(dateStr + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+// ── main ─────────────────────────────────────────────────
+if (has('--render')) {
+  const r = render();
+  console.log(`✅ 渲染 ${r.written} 个月份文件（共 ${r.records} 条自评记录）`);
+  process.exit(0);
+}
+if (has('--list')) {
+  const month = arg('--month');
+  const rows = exp.list().filter((e) => e.kind === 'self_assessment');
+  const out = rows.filter((e) => !month || (e.meta.date || e.ts).startsWith(month));
+  console.log(JSON.stringify(out.map((e) => ({ id: e.id, date: e.meta.date, score: e.score, streak_day: e.streak_day })), null, 2));
+  process.exit(0);
+}
+const inputPath = arg('--input');
+if (!inputPath) {
+  console.error('用法：node scripts/excellence-checkin.js --input <json> [--dry] | --render | --list [--month YYYY-MM]');
+  process.exit(2);
+}
+let payload;
+try { payload = JSON.parse(fs.readFileSync(inputPath, 'utf8')); }
+catch (e) { console.error(`❌ 读不到输入 JSON：${e.message}`); process.exit(2); }
+
+if (has('--dry')) {
+  const probe = { ...payload };
+  const entry = {
+    scope: 'skill', scenario: `每日自评 · ${probe.date}`, lesson: probe.wu || '',
+    provenance: (probe.raw_ids || []).length ? { raw_ids: probe.raw_ids } : { source: `memory/${probe.date}.md` },
+    expiry: { kind: 'date', at: addDays(probe.date, 90) }, side_effects: [],
+    kind: 'self_assessment', score: probe.score,
+  };
+  const v = exp.validateEntry(entry);
+  console.log(v.valid ? '✅ 校验通过（未写盘）' : `❌ 校验失败：${v.errors.map((e) => e.code).join(', ')}`);
+  process.exit(v.valid ? 0 : 1);
+}
+
+try {
+  const r = checkin(payload);
+  if (payload.count_in_streak !== false) {
+    require('child_process').execSync(`node ${STREAK_SCRIPT} --mark`, { stdio: 'inherit' });
+  }
+  render();
+  console.log(`✅ 打卡已入库 id=${r.record.id} · 已渲染 md`);
+} catch (e) {
+  console.error(`❌ ${e.message}`);
+  if (e.details) e.details.forEach((d) => console.error(`   - ${d.code}: ${d.msg || d.message}`));
+  process.exit(1);
+}

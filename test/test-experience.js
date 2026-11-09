@@ -220,6 +220,75 @@ test('[P0#1 扩展] 无失败样本的经验条目 → 当前未被拒绝（记�
   assert.strictEqual(accepted, true, '当前应被接受（已知缺口，非同义词 bug）');
 });
 
+// ── self_assessment（三个三打卡 · 2026-11-09 增）────────────
+const FULL_SCORE = { wen_guo_ze_xi: 7, yi_yi_wei_li: 5, jian_xian_si_qi: 8, jie_xu_rong: 4, jie_yuan_hen: 9, jie_ji_du: 9 };
+
+function selfEntry(over = {}) {
+  return validEntry({
+    kind: 'self_assessment',
+    score: { ...FULL_SCORE },
+    scenario: '每日自评 · 2026-11-09',
+    ...over,
+  });
+}
+
+test('self_assessment 六项齐全 → 可入库', () => {
+  const r = exp.validateEntry(selfEntry());
+  assert.strictEqual(r.valid, true, JSON.stringify(r.errors));
+});
+
+test('self_assessment 缺一项分数 → MISSING_SCORE（不许留空）', () => {
+  const s = { ...FULL_SCORE };
+  delete s.jie_ji_du;
+  const r = exp.validateEntry(selfEntry({ score: s }));
+  assert.strictEqual(r.valid, false);
+  assert.ok(r.errors.some(x => x.code === 'MISSING_SCORE'), '应含 MISSING_SCORE');
+});
+
+test('self_assessment 完全没有 score → MISSING_SCORE', () => {
+  const r = exp.validateEntry(selfEntry({ score: undefined }));
+  assert.strictEqual(r.valid, false);
+  assert.ok(r.errors.some(x => x.code === 'MISSING_SCORE'));
+});
+
+test('分数越界（11 / 0）→ BAD_SCORE', () => {
+  const r1 = exp.validateEntry(selfEntry({ score: { ...FULL_SCORE, jie_xu_rong: 11 } }));
+  assert.ok(r1.errors.some(x => x.code === 'BAD_SCORE'), '11 应越界');
+  const r2 = exp.validateEntry(selfEntry({ score: { ...FULL_SCORE, jie_xu_rong: 0 } }));
+  assert.ok(r2.errors.some(x => x.code === 'BAD_SCORE'), '0 应越界');
+});
+
+test('分数非数字 → BAD_SCORE（不许 "5" 字符串混进来）', () => {
+  const r = exp.validateEntry(selfEntry({ score: { ...FULL_SCORE, wen_guo_ze_xi: '5' } }));
+  assert.ok(r.errors.some(x => x.code === 'BAD_SCORE'));
+});
+
+test('self_assessment 无 provenance → 仍被拒（复用红线之三，天然挡敷衍打卡）', () => {
+  const e = selfEntry();
+  delete e.provenance;
+  const r = exp.validateEntry(e);
+  assert.strictEqual(r.valid, false);
+  assert.ok(r.errors.some(x => x.code === 'MISSING_PROVENANCE'));
+});
+
+test('streak_day 非正整数 → BAD_STREAK_DAY', () => {
+  const r = exp.validateEntry(selfEntry({ streak_day: 0 }));
+  assert.ok(r.errors.some(x => x.code === 'BAD_STREAK_DAY'));
+});
+
+test('self_assessment 落盘后 score 与 kind 保留（不丢字段）', () => {
+  freshDir();
+  const { record } = exp.add(selfEntry({ streak_day: 3 }));
+  assert.strictEqual(record.kind, 'self_assessment');
+  assert.deepStrictEqual(record.score, FULL_SCORE);
+  assert.strictEqual(record.streak_day, 3);
+});
+
+test('普通经验（无 kind）不受 score 校验影响', () => {
+  const r = exp.validateEntry(validEntry());
+  assert.strictEqual(r.valid, true);
+});
+
 // ── 汇总 ───────────────────────────────────────────────
 console.log('\n─────────────────────────────');
 console.log(`通过: ${pass}`);
