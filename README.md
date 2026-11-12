@@ -6,7 +6,9 @@
 
 ## 版本
 
-**v1.7.1**（2026-11-12）— 🚨 **v1.7.0 有 bug，请直接用 v1.7.1**：修 `DATA_ROOT` 装错位置时会向上盲探到**另一个 Agent 的 workspace**（静默读到对方数据、不报错、写入会污染对方记录）；改为只认两种布局，其余报错退出；selfcheck 增第 7 项负向断言 → 7/7。三个三打卡随仓分发：`skills/excellence-daily/` 自包含包 · `EXCELLENCE_AGENT` 多租户 · streak 起点不再硬编码 · 篇幅上限硬校验 · 512/512 全绿
+**v1.7.2**（2026-11-12）— 🚨 **请用 v1.7.2**：修两个「照说明书做反而会失败」的 bug（阿契实测报告）—— ① `selfcheck` 忽略 `EXCELLENCE_AGENT`，设了 slug 就变 5/7，**越遵守说明越过不了验收** ② `SKILL.md` 格式模板里写死了若兰的名字，照「一字不改」执行会每天署别人的名。新增自检第 8 项锁回归（slug 分目录），现 **8/8**
+
+**v1.7.1**（2026-11-12）— 🚨 **v1.7.0 有 bug，请用 ≥v1.7.1**：修 `DATA_ROOT` 装错位置时会向上盲探到**另一个 Agent 的 workspace**（静默读到对方数据、不报错、写入会污染对方记录）；改为只认两种布局，其余报错退出；selfcheck 增第 7 项负向断言。三个三打卡随仓分发：`skills/excellence-daily/` 自包含包 · `EXCELLENCE_AGENT` 多租户 · streak 起点不再硬编码 · 篇幅上限硬校验
 
 **v1.7.0**（2026-11-12）— + **三个三打卡随仓分发**：`skills/excellence-daily/` 自包含分发包（SKILL + INSTALL + checkin/streak/selfcheck + experience）；`DATA_ROOT` 改向上探测（支持 `EXCELLENCE_DATA_ROOT`）；`EXCELLENCE_AGENT` 多租户；streak 起点不再硬编码；篇幅上限硬校验；`self_assessment` 六维缺一即拒；新增 parity 测试防两份代码漂移。⚠️ 本版 `DATA_ROOT` 有「装错位置读到别人数据」bug，用 v1.7.1
 

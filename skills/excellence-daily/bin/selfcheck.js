@@ -70,6 +70,23 @@ const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'excellence-selfcheck-'));
 const WS = path.join(TMP, 'ws');
 const today = localToday();
 
+// [2026-11-12 17:2x 修 · 阿契（aqi）实测报告]
+//   selfcheck 原来写死「无 slug」路径：设了 EXCELLENCE_AGENT 后
+//   运行时数据落到 <slug>/ 下，而自检还去原路径找 → **照说明书做的人永远 5/7**。
+//   实测：`EXCELLENCE_AGENT=aqi5` → 5/7（缺 data/experience/2026-11.jsonl 与 streak.json）。
+//   现在跟随同一个 slug（与 experience.js / excellence-checkin.js 同一口径）。
+const SLUG = (() => {
+  const raw = process.env.EXCELLENCE_AGENT;
+  if (!raw) return '';
+  const s = String(raw).trim();
+  if (!/^[A-Za-z0-9_-]{1,32}$/.test(s)) {
+    throw new Error(`[selfcheck] 非法 EXCELLENCE_AGENT: ${JSON.stringify(raw)}（仅允许 [A-Za-z0-9_-]{1,32}）`);
+  }
+  return s;
+})();
+const EXP_BASE = SLUG ? path.join(WS, 'data', 'experience', SLUG) : path.join(WS, 'data', 'experience');
+const MD_BASE = SLUG ? path.join(WS, 'memory', 'excellence', SLUG) : path.join(WS, 'memory', 'excellence');
+
 const goodInput = {
   date: today,
   count_in_streak: true,
@@ -114,9 +131,9 @@ check('3 正式入库 exit 0 且产出三件', () => {
   assert.strictEqual(r.status, 0, `exit=${r.status}\n${r.stdout}${r.stderr}`);
   const ym = today.slice(0, 7);
   const arts = [
-    path.join(WS, 'data', 'experience', `${ym}.jsonl`),
-    path.join(WS, 'memory', 'excellence', `${ym}.md`),
-    path.join(WS, 'memory', 'excellence', 'streak.json'),
+    path.join(EXP_BASE, `${ym}.jsonl`),
+    path.join(MD_BASE, `${ym}.md`),
+    path.join(MD_BASE, 'streak.json'),
   ];
   for (const p of arts) assert.ok(fs.existsSync(p), `缺产物：${path.relative(WS, p)}`);
   const lines = fs.readFileSync(arts[0], 'utf8').trim().split('\n').filter(Boolean);
@@ -126,7 +143,7 @@ check('3 正式入库 exit 0 且产出三件', () => {
 });
 
 check('4 streak.startDate == 今天（不是别人的起点）', () => {
-  const s = JSON.parse(fs.readFileSync(path.join(WS, 'memory', 'excellence', 'streak.json'), 'utf8'));
+  const s = JSON.parse(fs.readFileSync(path.join(MD_BASE, 'streak.json'), 'utf8'));
   assert.strictEqual(s.startDate, today, `startDate=${s.startDate}，期望 ${today}`);
   assert.strictEqual(s.days, 1, `days=${s.days}，期望 1`);
   return `第 ${s.days} 天 · ${s.startDate}`;
@@ -163,6 +180,24 @@ check('7 负向：装错位置必须报错（不许读到别人的数据）', ()
   assert.notStrictEqual(r.status, 0, '装错位置却没报错 —— 会静默读到别人的数据');
   assert.ok(/位置不对|EXCELLENCE_DATA_ROOT/.test(r.stdout + r.stderr), `未见位置错误提示：${r.stdout}${r.stderr}`);
   return '非标准布局被拒';
+});
+
+// [2026-11-12 17:2x] 阿契（aqi）实测报告的真 bug 回归锁：
+//   设了 EXCELLENCE_AGENT 后运行时数据落到 <slug>/，而旧的 check 3/4 还去无 slug 路径找
+//   → 照说明书做的人永远 5/7。这条断言不依赖外层 env：内置起一个子进程显式带 slug，
+//   并要求数据确实落在 <slug>/ 下（否则同一个 bug 会以另一种形式复发）。
+check('8 设了 EXCELLENCE_AGENT 时数据必须落到 <slug>/（不是无 slug 路径）', () => {
+  const slug = 'selfcheck_probe';
+  const ws2 = path.join(TMP, 'ws-slug');
+  fs.mkdirSync(path.join(ws2, 'skills'), { recursive: true });
+  fs.cpSync(path.join(WS, 'skills', 'excellence-daily'), path.join(ws2, 'skills', 'excellence-daily'), { recursive: true });
+  const r = run(ws2, [CLI, '--input', writeJson(path.join(TMP, 'slug.json'), { ...goodInput, date: today })], { EXCELLENCE_AGENT: slug });
+  assert.strictEqual(r.status, 0, `带 slug 入库失败 exit=${r.status}\n${r.stdout}${r.stderr}`);
+  const ym = today.slice(0, 7);
+  assert.ok(fs.existsSync(path.join(ws2, 'data', 'experience', slug, `${ym}.jsonl`)), '数据没落到 <slug>/ 下的 experience');
+  assert.ok(fs.existsSync(path.join(ws2, 'memory', 'excellence', slug, 'streak.json')), 'streak.json 没落到 <slug>/ 下');
+  assert.ok(!fs.existsSync(path.join(ws2, 'data', 'experience', `${ym}.jsonl`)), '无 slug 路径也被写了 —— 隔离失效');
+  return `<slug>/ 分目录正确（${slug}）`;
 });
 
 const failed = checks.filter((c) => !c.ok);
