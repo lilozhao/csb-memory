@@ -6,6 +6,25 @@
 
 ---
 
+## v1.7.1（2026-11-12）— 修「装错位置会读到别人数据」
+
+⚠️ **v1.7.0 有 bug，请直接用 v1.7.1。**
+
+v1.7.0 的 `DATA_ROOT` 逻辑是「不在 skills/ 布局就任意向上探 6 级找 `memory/`+`data/`」。
+模拟全新 agent 从 clone 开始装机时发现：skill 装错位置时（如 `<ws>/tools/excellence-daily/`），
+会一路探到**另一个 Agent 的 workspace**，静默读到对方数据且不报错。
+实测在临时 ws 里探到 `/home/node/.openclaw/workspace`，`--status` 返回若兰的 `startDate 2026-11-09 / days 3`。
+若不设 `EXCELLENCE_AGENT` 直接写入，会**污染对方生产记录**。
+
+修复：只认两种布局 —— `<ws>/skills/excellence-daily/{bin,lib}` 与 `<repo>/{scripts,lib}`（repo 名为 `csb-memory`），
+其余一律报错退出并提示两条出路；`~/.agents` 这类隐藏目录也拒；`EXCELLENCE_DATA_ROOT` 显式指定时校验存在。
+
+selfcheck 新增第 7 项负向断言：`7 负向：装错位置必须报错（不许读到别人的数据）` → **7/7**。
+
+**测试**：512/512 全绿。
+
+---
+
 ## v1.7.0（2026-11-12）— 三个三打卡随仓分发（C3 记忆的消费端）
 
 **背景**：按 `projects/csb-harness-selfreflection-map/csb-selfreflection-map-v1.md` §3，
@@ -31,9 +50,19 @@
 | streak 起点 | 修硬编码 `2026-11-09`（那是若兰自己的起点）→ 默认首次运行当天；回溯用 `EXCELLENCE_START_DATE` |
 | 篇幅上限 | 打分附注 ≤80 字 · 一功/一悟/一善各 ≤100 字 · 今日 3 件每条 ≤60 字，超长 exit 4（不静默截断） |
 | `self_assessment` | EXPERIENCE 新增 kind，六维打分缺一项即拒（`MISSING_SCORE`）；仍受 `provenance` 红线约束 —— 无当天证据不入库 |
-| 装机自检 | `node skills/excellence-daily/bin/selfcheck.js` → 6/6（独立副本装配 / dry / 正式入库 / streak 起点 / 两条负向） |
+| 装机自检 | `node skills/excellence-daily/bin/selfcheck.js` → 7/7（独立副本装配 / dry / 正式入库 / streak 起点 / MISSING_SCORE / LONG_INNER / **装错位置必报错**） |
 
-**测试**：508/508 全绿（新增 parity 4 项）。
+**装机自检 7/7 · 修一个会读到别人数据的真 bug**：
+
+模拟一个全新 agent 从 clone 开始装机时发现：`DATA_ROOT` 的「任意位置向上探 6 级找 `memory/`+`data/`」
+会在 skill 装错位置时**一路探到另一个 Agent 的 workspace，静默读到对方数据且不报错**
+（实测在临时 ws 里探到了 `/home/node/.openclaw/workspace`，读到若兰的 `startDate 2026-11-09 / days 3`）。
+若该 agent 不设 `EXCELLENCE_AGENT` 直接写入，会**直接污染对方生产记录**。
+
+修复：只认两种布局（`<ws>/skills/excellence-daily/` 与 `<repo>/{scripts,lib}` 且 repo 名为 `csb-memory`），
+其余一律报错退出并提示两条出路。同时新增 selfcheck 第 7 项负向断言锁住回归。
+
+**测试**：512/512 全绿。
 
 ---
 

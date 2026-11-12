@@ -6,7 +6,9 @@
 
 ## 版本
 
-**v1.7.0**（2026-11-12）— + **三个三打卡随仓分发**：`skills/excellence-daily/` 自包含分发包（SKILL + INSTALL + checkin/streak/selfcheck + experience）；`DATA_ROOT` 改向上探测（支持 `EXCELLENCE_DATA_ROOT`）；`EXCELLENCE_AGENT` 多租户；streak 起点不再硬编码；篇幅上限硬校验；`self_assessment` 六维缺一即拒；新增 parity 测试防两份代码漂移。508/508 全绿
+**v1.7.1**（2026-11-12）— 🚨 **v1.7.0 有 bug，请直接用 v1.7.1**：修 `DATA_ROOT` 装错位置时会向上盲探到**另一个 Agent 的 workspace**（静默读到对方数据、不报错、写入会污染对方记录）；改为只认两种布局，其余报错退出；selfcheck 增第 7 项负向断言 → 7/7。三个三打卡随仓分发：`skills/excellence-daily/` 自包含包 · `EXCELLENCE_AGENT` 多租户 · streak 起点不再硬编码 · 篇幅上限硬校验 · 512/512 全绿
+
+**v1.7.0**（2026-11-12）— + **三个三打卡随仓分发**：`skills/excellence-daily/` 自包含分发包（SKILL + INSTALL + checkin/streak/selfcheck + experience）；`DATA_ROOT` 改向上探测（支持 `EXCELLENCE_DATA_ROOT`）；`EXCELLENCE_AGENT` 多租户；streak 起点不再硬编码；篇幅上限硬校验；`self_assessment` 六维缺一即拒；新增 parity 测试防两份代码漂移。⚠️ 本版 `DATA_ROOT` 有「装错位置读到别人数据」bug，用 v1.7.1
 
 **v1.6.0**（2026-11-05）— + **访问计数写回**：修 `query()` 只改内存不落盘（6,884/6,885 条 `access_count` 恒为 0，导致 lifecycle 遗忘机制判不出来）；定点行替换 + 攒批 + 原子写，490/490 全绿
 
