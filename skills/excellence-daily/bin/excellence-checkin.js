@@ -38,31 +38,65 @@ const exp = require('../lib/experience');
 // 「同时含 memory/ 与 data/」的 workspace 根。
 // 为什么探测而不是写死层数：同一份代码会被放在 skills/excellence-daily/bin/（装机后）
 // 和 csb-memory/skills/excellence-daily/bin/（仓库内分发源）两处，层数不同 —— 写死必有一处错。
+// [2026-11-12 15:2x 修 · 模拟装机踩出的真 bug]
+//   上一版「任意位置都向上探 6 级找 memory/+data/」：skill 装错位置时（如
+//   <ws>/elsewhere/excellence-daily/）会一路探到别人的 workspace，**静默读到对方数据且不报错**，
+//   一旦写入就直接污染对方生产记录。现在改为：
+//     ① 路径必须是 <root>/skills/excellence-daily/{bin,lib} 这个布局，root 才可能是 ws
+//     ② root 若是仓库根（package.json.name==='csb-memory'）→ 说明是仓库内自测，继续向上找
+//     ③ root 若是隐藏目录（如 ~/.agents）→ 不认，要求显式指定
+//     ④ 其他任何情况 → **直接报错退出**，绝不猜
 const DATA_ROOT = (() => {
-  if (process.env.EXCELLENCE_DATA_ROOT) return path.resolve(process.env.EXCELLENCE_DATA_ROOT);
-  // 仓库根（csb-memory）不是 agent workspace：分发源放在 <repo>/skills/ 下时不能把 repo 当 ws
+  if (process.env.EXCELLENCE_DATA_ROOT) {
+    const r = path.resolve(process.env.EXCELLENCE_DATA_ROOT);
+    if (!fs.existsSync(r)) throw new Error('[excellence] EXCELLENCE_DATA_ROOT 不存在: ' + r);
+    return r;
+  }
   const isRepoRoot = (d) => {
     try { return JSON.parse(fs.readFileSync(path.join(d, 'package.json'), 'utf8')).name === 'csb-memory'; }
     catch { return false; }
   };
-  // ① 装机主场景：<ws>/skills/excellence-daily/{bin,lib}/ → ws = skills 的父目录
-  //    （不用「含 memory/」判据：新装 agent 首次自检时 ws 里可能还没有 memory/）
   const segs = __dirname.split(path.sep);
   const iSkills = segs.lastIndexOf('skills');
-  let dir;
-  if (iSkills > 0) {
+  // 布局 A：<root>/skills/excellence-daily/{bin,lib} ← 装机后
+  const layoutA = iSkills > 0 && segs[iSkills + 1] === 'excellence-daily';
+  // 布局 B：<repo>/{scripts,lib} 且 <repo> 是 csb-memory ← 仓库运行版
+  const layoutB = !layoutA && isRepoRoot(path.join(__dirname, '..'));
+
+  let base;
+  if (layoutA) {
     const root = segs.slice(0, iSkills).join(path.sep) || path.sep;
-    if (!isRepoRoot(root)) return root;
-    dir = root;
+    if (!isRepoRoot(root)) {
+      if (path.basename(root).startsWith('.')) {
+        throw new Error(
+          '[excellence] 数据根解析到隐藏目录 ' + root + '，不像 workspace。\n' +
+          '  请显式设置 EXCELLENCE_DATA_ROOT=<你的 workspace 根>'
+        );
+      }
+      return root;   // ← 装机主场景，直接就是 ws
+    }
+    base = root;     // 仓库内的技能包副本 → 继续向上找 ws
+  } else if (layoutB) {
+    base = path.join(__dirname, '..');   // 仓库根 → 向上找 ws
   } else {
-    dir = __dirname;
+    throw new Error(
+      '[excellence] 技能目录位置不对：应装在 <ws>/skills/excellence-daily/，' +
+      '当前在 ' + __dirname + '。\n' +
+      '  两种办法：① 把整个 excellence-daily/ 移到 <ws>/skills/ 下；' +
+      '② 或显式设置 EXCELLENCE_DATA_ROOT=<你的 workspace 根>'
+    );
   }
-  // ② 仓库内运行：csb-memory/{scripts,lib}/ → 向上找同时含 memory/ 与 data/ 的根
-  for (let i = 0; i < 6; i++) {
+
+  // 仓库内运行时：向上找同时含 memory/ 与 data/ 的 workspace 根
+  let dir = base;
+  for (let i = 0; i < 4; i++) {
     dir = path.dirname(dir);
     if (fs.existsSync(path.join(dir, 'memory')) && fs.existsSync(path.join(dir, 'data'))) return dir;
   }
-  throw new Error('[excellence] 找不到 workspace 根（需同时含 memory/ 与 data/）→ 请显式设置 EXCELLENCE_DATA_ROOT');
+  throw new Error(
+    '[excellence] 在仓库内运行但找不到上层 workspace（需含 memory/ 与 data/）。\n' +
+    '  请显式设置 EXCELLENCE_DATA_ROOT=<你的 workspace 根>'
+  );
 })();
 // 多租户 slug（2026-11-10）：不设 → 路径不变；设了 → memory/excellence/<slug>/
 const AGENT_SLUG = (() => {

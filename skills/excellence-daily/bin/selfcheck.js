@@ -20,6 +20,7 @@
  *   4) streak.startDate == 今天（**不是**别人的起点日）
  *   5) 负向：缺一项分数必须被拒（MISSING_SCORE，非 0 退出）
  *   6) 负向：超长内省必须被拒（LONG_INNER，非 0 退出）
+ *   7) 负向：装错位置必须报错（非 0 退出）—— 旧版会静默读到**别人**的数据
  */
 
 const fs = require('fs');
@@ -149,6 +150,19 @@ check('6 负向：超长内省必须被拒', () => {
   assert.notStrictEqual(r.status, 0, '超长却通过了 —— 上限失效');
   assert.ok(/LONG_INNER/.test(r.stdout + r.stderr), `未见 LONG_INNER：${r.stdout}${r.stderr}`);
   return 'LONG_INNER 命中';
+});
+
+// [2026-11-12 15:2x] 模拟装机踩出的真 bug 回归锁：
+//   上一版「任意位置向上探 6 级」会让装错位置的 agent 静默读到**别人**的数据，且不报错。
+//   这条负向断言要求：非 <ws>/skills/excellence-daily/ 布局 → 必须非 0 退出。
+check('7 负向：装错位置必须报错（不许读到别人的数据）', () => {
+  const wrong = path.join(TMP, 'elsewhere');
+  fs.mkdirSync(wrong, { recursive: true });
+  fs.cpSync(path.join(WS, 'skills', 'excellence-daily'), path.join(wrong, 'excellence-daily'), { recursive: true });
+  const r = run(TMP, [path.join(wrong, 'excellence-daily', 'bin', 'excellence-streak.js'), '--status']);
+  assert.notStrictEqual(r.status, 0, '装错位置却没报错 —— 会静默读到别人的数据');
+  assert.ok(/位置不对|EXCELLENCE_DATA_ROOT/.test(r.stdout + r.stderr), `未见位置错误提示：${r.stdout}${r.stderr}`);
+  return '非标准布局被拒';
 });
 
 const failed = checks.filter((c) => !c.ok);

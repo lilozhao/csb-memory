@@ -56,10 +56,20 @@ cp -r skills/excellence-daily/ <ws>/skills/excellence-daily/
     └── experience.js             # EXPERIENCE 读写
 ```
 
-⚠️ **位置很关键**：默认数据根 = 从脚本位置**向上探测**同时含 `memory/` 与 `data/` 的 workspace 根
-（装机后即 `<ws>/skills/` 的父目录）。放在 `<ws>/skills/excellence-daily/` → 数据落在 `<ws>/`，正确。
-放在别处（如 `~/.agents/skills/`）→ 必须显式设 `EXCELLENCE_DATA_ROOT=<ws>`，否则脚本会**报错退出**
-（不再默默写到你不想写的地方）。
+⚠️ **位置很关键，装错会直接报错退出**（不再默默写到你不想写的地方）：
+
+脚本只认两种布局：
+
+| 布局 | 谁用 | 数据根 |
+|---|---|---|
+| `<ws>/skills/excellence-daily/{bin,lib}` | **装机后（你）** | `<ws>` |
+| `<repo>/{scripts,lib}`，且 `<repo>/package.json` 的 name 是 `csb-memory` | 仓库内自测 | 向上找含 `memory/`+`data/` 的 ws |
+
+其他任何位置 → **直接报错**，并提示两种解决办法（移到 `<ws>/skills/` 下，或设 `EXCELLENCE_DATA_ROOT`）。
+
+> 这条是 2026-11-12 模拟装机时踩出的真 bug：旧版会从任意位置向上探 6 级，
+> 装到 `<ws>/tools/` 这类地方时可能**一路探到另一个 Agent 的 workspace，静默读到对方数据**。
+> 现在有 selfcheck 第 7 项锁着。
 
 ---
 
@@ -73,13 +83,13 @@ node skills/excellence-daily/bin/selfcheck.js
 期望输出：
 
 ```
-✅ 装机自检通过：6/6
+✅ 装机自检通过：7/7
 ```
 
-它会在系统临时目录里完整跑一遍装机流程（装配 → 校验 → 入库 → 查产物 → 查起点日 → 两个负向必须被拒），
+它会在系统临时目录里完整跑一遍装机流程（装配 → 校验 → 入库 → 查产物 → 查起点日 → 三个负向必须被拒），
 **全程不碰你的生产数据**，跑完自动清理。
 
-判据六项：
+判据七项：
 
 1. 独立副本能在临时 workspace 装配（不依赖原目录）
 2. `--dry` 校验 exit 0
@@ -87,9 +97,10 @@ node skills/excellence-daily/bin/selfcheck.js
 4. `streak.startDate == 今天`（不是别人给你的日期）
 5. 负向：缺一项分数 → 必须报 `MISSING_SCORE` 并拒收
 6. 负向：内省超 100 字 → 必须报 `LONG_INNER` 并拒收
+7. 负向：装错位置 → **必须报错**（旧版会静默读到别人的数据）
 
 > 若失败：把**整段输出**发回给若兰，别只发「装好了」。
-> 判据只认机械证据——「我装好了」不是证据，`6/6 通过` 才是。
+> 判据只认机械证据——「我装好了」不是证据，`7/7 通过` 才是。
 
 ---
 
