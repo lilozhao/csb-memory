@@ -69,6 +69,28 @@ if (stray.length === 0) {
   fail++;
 }
 
+// ── 可选交叉校验：与 workspace 生产副本对比 ──────────────────────────
+// 为什么加这条：本仓的 skills/ 是**分发源**，agent 真正在跑的是 <ws>/skills/excellence-daily/。
+// 只比本仓内部两份（skills/ ↔ scripts/）会漏掉「改了生产副本、没同步回仓库」——
+// 那正是 2026-11-09→11-12 发生过的漂移方向（仓库版停在 11-09）。
+// 找不到时就跳过（其他 agent 未必有这份 workspace 源码），找到就必须逐字相同。
+const wsSkill = path.resolve(ROOT, '..', 'skills', 'excellence-daily');
+const wsOverride = process.env.EXCELLENCE_PARITY_WS;
+const wsDir = wsOverride ? path.join(wsOverride, 'skills', 'excellence-daily') : wsSkill;
+const WS_FILES = ['bin/excellence-checkin.js', 'bin/excellence-streak.js', 'bin/selfcheck.js', 'lib/experience.js'];
+if (fs.existsSync(path.join(wsDir, 'SKILL.md'))) {
+  console.log(`\n  交叉校验 workspace 生产副本: ${wsDir}`);
+  for (const rel of WS_FILES) {
+    const wf = path.join(wsDir, rel);
+    const rf = path.join(ROOT, 'skills/excellence-daily', rel);
+    if (!fs.existsSync(wf)) { console.log(`  ✗ 生产副本缺文件: ${rel}`); fail++; continue; }
+    if (sha(wf) === sha(rf)) { console.log(`  ✓ ${rel}`); pass++; }
+    else { console.log(`  ✗ ${rel} 与生产副本不一致 → 改了生产没同步回仓库（或反之）`); fail++; }
+  }
+} else {
+  console.log(`\n  ⚪ 跳过交叉校验（未找到 ${wsDir}）—— 非本机生产环境时正常`);
+}
+
 console.log(`\n${fail === 0 ? '✅' : '❌'} ${pass} passed, ${fail} failed`);
 // 兼容 run-all-tests.js 的计数格式
 console.log(`通过: ${pass}`);
