@@ -34,8 +34,47 @@ const fs = require('fs');
 const path = require('path');
 const exp = require('../lib/experience');
 
-const WS = path.join(__dirname, '..', '..', '..');
-const MD_DIR = path.join(__dirname, '..', '..', 'memory', 'excellence');
+// 数据根（2026-11-12 统一）：显式 EXCELLENCE_DATA_ROOT 优先；否则从脚本位置向上探测
+// 「同时含 memory/ 与 data/」的 workspace 根。
+// 为什么探测而不是写死层数：同一份代码会被放在 skills/excellence-daily/bin/（装机后）
+// 和 csb-memory/skills/excellence-daily/bin/（仓库内分发源）两处，层数不同 —— 写死必有一处错。
+const DATA_ROOT = (() => {
+  if (process.env.EXCELLENCE_DATA_ROOT) return path.resolve(process.env.EXCELLENCE_DATA_ROOT);
+  // 仓库根（csb-memory）不是 agent workspace：分发源放在 <repo>/skills/ 下时不能把 repo 当 ws
+  const isRepoRoot = (d) => {
+    try { return JSON.parse(fs.readFileSync(path.join(d, 'package.json'), 'utf8')).name === 'csb-memory'; }
+    catch { return false; }
+  };
+  // ① 装机主场景：<ws>/skills/excellence-daily/{bin,lib}/ → ws = skills 的父目录
+  //    （不用「含 memory/」判据：新装 agent 首次自检时 ws 里可能还没有 memory/）
+  const segs = __dirname.split(path.sep);
+  const iSkills = segs.lastIndexOf('skills');
+  let dir;
+  if (iSkills > 0) {
+    const root = segs.slice(0, iSkills).join(path.sep) || path.sep;
+    if (!isRepoRoot(root)) return root;
+    dir = root;
+  } else {
+    dir = __dirname;
+  }
+  // ② 仓库内运行：csb-memory/{scripts,lib}/ → 向上找同时含 memory/ 与 data/ 的根
+  for (let i = 0; i < 6; i++) {
+    dir = path.dirname(dir);
+    if (fs.existsSync(path.join(dir, 'memory')) && fs.existsSync(path.join(dir, 'data'))) return dir;
+  }
+  throw new Error('[excellence] 找不到 workspace 根（需同时含 memory/ 与 data/）→ 请显式设置 EXCELLENCE_DATA_ROOT');
+})();
+// 多租户 slug（2026-11-10）：不设 → 路径不变；设了 → memory/excellence/<slug>/
+const AGENT_SLUG = (() => {
+  const raw = process.env.EXCELLENCE_AGENT;
+  if (!raw) return '';
+  const s = String(raw).trim();
+  if (!/^[A-Za-z0-9_-]{1,32}$/.test(s)) throw new Error(`[excellence] 非法 EXCELLENCE_AGENT: ${JSON.stringify(raw)}`);
+  return s;
+})();
+const MD_DIR = AGENT_SLUG
+  ? path.join(DATA_ROOT, 'memory', 'excellence', AGENT_SLUG)
+  : path.join(DATA_ROOT, 'memory', 'excellence');
 const STREAK_SCRIPT = path.join(__dirname, 'excellence-streak.js');
 
 const LABELS = {
@@ -55,6 +94,37 @@ const args = process.argv.slice(2);
 const arg = (k) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : null; };
 const has = (k) => args.includes(k);
 
+// ── 长度上限（2026-11-10 一澜定：每点 1-2 句）────────────────
+// 为什么不靠自觉：光写「请简短」没用。昨天那份单条 300 字，不是话多，是格式没有上限。
+const LIMITS = {
+  scoreNote: 80,   // 每个打分项附注
+  inner: 100,      // 三内省每一项（功/悟/善）
+  todoItem: 60,    // 今日 3 件每条
+};
+const charLen = (s) => [...String(s || '')].length;   // 按字符计，中文一字算一个
+
+/** 检查一条输入是否超长，返回问题列表 */
+function checkLengths(input) {
+  const errs = [];
+  const note = input.score_note || {};
+  for (const [k, v] of Object.entries(note)) {
+    if (charLen(v) > LIMITS.scoreNote) {
+      errs.push(`LONG_SCORE_NOTE:${k}(${charLen(v)}>${LIMITS.scoreNote})`);
+    }
+  }
+  for (const [field, label] of [['gong', '一功'], ['wu', '一悟'], ['shan', '一善']]) {
+    if (charLen(input[field]) > LIMITS.inner) {
+      errs.push(`LONG_INNER:${label}(${charLen(input[field])}>${LIMITS.inner})`);
+    }
+  }
+  (Array.isArray(input.todo_three) ? input.todo_three : []).forEach((t, i) => {
+    if (charLen(t) > LIMITS.todoItem) {
+      errs.push(`LONG_TODO:${i + 1}(${charLen(t)}>${LIMITS.todoItem})`);
+    }
+  });
+  return errs;
+}
+
 // ── 渲染：EXPERIENCE → md（唯一方向，绝不反向）──────────────
 function render() {
   const all = exp.list().filter((e) => e.kind === 'self_assessment');
@@ -71,8 +141,8 @@ function render() {
     const lines = [];
     lines.push(`# 三个三 · 每日打卡（AI 自评线）· ${month}`);
     lines.push('');
-    lines.push('> ⚠️ **本文件由 `scripts/excellence-checkin.js --render` 从 EXPERIENCE 自动渲染，请勿手改。**');
-    lines.push('> 真相源：`csb-memory/data/experience/*.jsonl`（kind=self_assessment）。手改会在下次渲染时被覆盖并留痕。');
+    lines.push('> ⚠️ **本文件由 `skills/excellence-daily/bin/excellence-checkin.js --render` 从 EXPERIENCE 自动渲染，请勿手改。**');
+    lines.push('> 真相源：`data/experience/*.jsonl`（kind=self_assessment）。手改会在下次渲染时被覆盖并留痕。');
     lines.push('> 格式见 `skills/excellence-daily/SKILL.md` · 历史人类打卡在 `memory/archive/daily_checkin_*.md`（不合并）');
     lines.push('');
     lines.push('---');
@@ -121,6 +191,13 @@ function checkin(input) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date || '')) {
     console.error('❌ date 必须是 YYYY-MM-DD');
     process.exit(2);
+  }
+  // 长度上限（2026-11-10）：超长拒收，不静默截断
+  const tooLong = checkLengths(input);
+  if (tooLong.length) {
+    console.error('❌ 篇幅超限（每点 1-2 句）：');
+    tooLong.forEach((e) => console.error(`   - ${e}`));
+    process.exit(4);
   }
   // 重复打卡检查（同一天只允许一条）
   const dup = exp.list().find((e) => e.kind === 'self_assessment' && (e.meta && e.meta.date) === date);
@@ -189,8 +266,19 @@ if (has('--dry')) {
     kind: 'self_assessment', score: probe.score,
   };
   const v = exp.validateEntry(entry);
-  console.log(v.valid ? '✅ 校验通过（未写盘）' : `❌ 校验失败：${v.errors.map((e) => e.code).join(', ')}`);
-  process.exit(v.valid ? 0 : 1);
+  if (!v.valid) {
+    console.log(`❌ 校验失败：${v.errors.map((e) => e.code).join(', ')}`);
+    process.exit(1);
+  }
+  // 长度上限：--dry 也要拦，否则校验通过、正式入库才被杀
+  const tooLong = checkLengths(probe);
+  if (tooLong.length) {
+    console.log('❌ 篇幅超限（每点 1-2 句）：');
+    tooLong.forEach((e) => console.log(`   - ${e}`));
+    process.exit(4);
+  }
+  console.log('✅ 校验通过（未写盘）');
+  process.exit(0);
 }
 
 try {

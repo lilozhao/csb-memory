@@ -6,6 +6,8 @@
 
 ## 版本
 
+**v1.7.0**（2026-11-12）— + **三个三打卡随仓分发**：`skills/excellence-daily/` 自包含分发包（SKILL + INSTALL + checkin/streak/selfcheck + experience）；`DATA_ROOT` 改向上探测（支持 `EXCELLENCE_DATA_ROOT`）；`EXCELLENCE_AGENT` 多租户；streak 起点不再硬编码；篇幅上限硬校验；`self_assessment` 六维缺一即拒；新增 parity 测试防两份代码漂移。508/508 全绿
+
 **v1.6.0**（2026-11-05）— + **访问计数写回**：修 `query()` 只改内存不落盘（6,884/6,885 条 `access_count` 恒为 0，导致 lifecycle 遗忘机制判不出来）；定点行替换 + 攒批 + 原子写，490/490 全绿
 
 **v1.2.0**（2026-09-05）— v1.1 + **P0-4 不可篡改进化日志** + **P0-2 资产晋升门槛**
@@ -38,10 +40,11 @@ csb-memory/
 │   ├── hive/          # 虫巢记忆（v1.0）
 │   ├── propagation/   # 记忆传播（v1.0）
 │   └── raw/           # 全量底仓（v1.1）—— append-only 流水 + 时态 + derived_from
-├── test/              # 490 用例，通过率 100%（2026-11-05 实测）
+├── test/              # 508 用例，通过率 100%（2026-11-12 实测）
 ├── specs/             # SPEC-MEM-0001（BID 关系信号 · 一期 approved v2.0）/ 0002（四态回填 · done）
 ├── examples/          # 示例（含 raw-usage.js）
-├── scripts/           # sync-daily.js 日常同步（日记/学习/社区三入口）· sync-session.js 会话原文采集（主会话覆盖，A7 修复件）· community-digest.js 社区摘要 · dream.js 蒸馏 · health-check.js 健康巡检（均支持 --agent/CSB_MEMORY_AGENT 适配）
+├── skills/            # 可分发技能包（v1.7.0 起）：excellence-daily 三个三打卡 —— 装机时整体拷到 <ws>/skills/
+├── scripts/           # sync-daily.js 日常同步（日记/学习/社区三入口）· sync-session.js 会话原文采集（主会话覆盖，A7 修复件）· community-digest.js 社区摘要 · dream.js 蒸馏 · health-check.js 健康巡检（均支持 --agent/CSB_MEMORY_AGENT 适配）· excellence-checkin.js 三个三打卡 · excellence-streak.js 累计天数
 └── protocol/          # 协议文档（CSB-Memory-v1.1.md）
 ```
 

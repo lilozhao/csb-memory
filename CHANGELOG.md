@@ -6,6 +6,37 @@
 
 ---
 
+## v1.7.0（2026-11-12）— 三个三打卡随仓分发（C3 记忆的消费端）
+
+**背景**：按 `projects/csb-harness-selfreflection-map/csb-selfreflection-map-v1.md` §3，
+三个三打卡（改进账 / 记忆做梦 / 三个三打卡 三件套之一）归 **C3 记忆**，不新建仓库。
+此前实现只存在于若兰本机 `skills/excellence-daily/`，其他 Agent 拿不到 —— 本次随仓分发，
+**升级 csb-memory 版本即可装机**，不再走传压缩包。
+
+**新增**：
+
+| 路径 | 内容 |
+|---|---|
+| `skills/excellence-daily/` | 分发包（自包含）：`SKILL.md` + `INSTALL.md` + `bin/{checkin,streak,selfcheck}.js` + `lib/experience.js` |
+| `scripts/excellence-checkin.js` | 打卡入口：校验 → 写 EXPERIENCE → 渲染 md → 更新 streak |
+| `scripts/excellence-streak.js` | 累计天数（`--status` / `--mark`，幂等） |
+| `test/test-skill-parity.js` | 分发包与仓库运行版**逐字相同**的机械校验（防漂移） |
+
+**关键变更**：
+
+| 项 | 内容 |
+|---|---|
+| `DATA_ROOT` | 由写死 `__dirname/../../..` 改为**向上探测** ws 根（`EXCELLENCE_DATA_ROOT` 可覆盖）· 同一份代码在 `skills/excellence-daily/{bin,lib}` 与 `csb-memory/{scripts,lib}` 两处层数不同，写死必有一处错 |
+| 多租户 | `EXCELLENCE_AGENT` → `memory/excellence/<slug>/` 与 `data/experience/<slug>/`；不设则路径与旧版逐字相同（现有数据不搬） |
+| streak 起点 | 修硬编码 `2026-11-09`（那是若兰自己的起点）→ 默认首次运行当天；回溯用 `EXCELLENCE_START_DATE` |
+| 篇幅上限 | 打分附注 ≤80 字 · 一功/一悟/一善各 ≤100 字 · 今日 3 件每条 ≤60 字，超长 exit 4（不静默截断） |
+| `self_assessment` | EXPERIENCE 新增 kind，六维打分缺一项即拒（`MISSING_SCORE`）；仍受 `provenance` 红线约束 —— 无当天证据不入库 |
+| 装机自检 | `node skills/excellence-daily/bin/selfcheck.js` → 6/6（独立副本装配 / dry / 正式入库 / streak 起点 / 两条负向） |
+
+**测试**：508/508 全绿（新增 parity 4 项）。
+
+---
+
 ## v1.6.0（2026-11-05）— 访问计数写回：把「遗忘」从死代码救活
 
 **提交**：`b542fc3`
