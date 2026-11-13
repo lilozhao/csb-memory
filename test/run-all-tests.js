@@ -11,6 +11,7 @@ const path = require('path');
 
 const tests = [
   { name: 'memory.js (core)', file: 'test-memory.js' },
+  { name: 'access-writeback (2026-11-05)', file: 'test-access-writeback.js' },
   { name: 'lifecycle.js (core)', file: 'test-lifecycle.js' },
   { name: 'value-scorer.js (core)', file: 'test-value-scorer.js' },
   { name: 'hive.js (v1.0)', file: 'test-hive.js' },
@@ -20,13 +21,15 @@ const tests = [
   { name: 'evolution.js (P0-4)', file: 'test-evolution.js' },
   { name: 'experience.js (Harness² C3)', file: 'test-experience.js' },
   { name: 'promotion-gate.js (P0-2)', file: 'test-promotion.js' },
+  { name: 'type-infer.js (dream 断供修复)', file: 'test-type-infer.js' },
   { name: 'bid-signal.js (SPEC-MEM-0001)', file: 'bid-signal.test.js' },
   { name: 'bid-state.js (SPEC-MEM-0002)', file: 'bid-state.test.js' },
   { name: 'bid-connection.js (O6-S1)', file: 'bid-connection.test.js' },
   { name: 'bid-consent.js (O6-S3)', file: 'bid-consent.test.js' },
   { name: 'bid-fetch.js (O6-S4)', file: 'bid-fetch.test.js' },
   { name: 'bid-lexicon.js (RFC v2.2 P-11/P-12)', file: 'bid-lexicon.test.js' },
-  { name: 'bid-p15.test.js (RFC v2.3 P-15 B)', file: 'bid-p15.test.js' }
+  { name: 'bid-p15.test.js (RFC v2.3 P-15 B)', file: 'bid-p15.test.js' },
+  { name: 'skill-parity (技能包↔运行版单一真相)', file: 'test-skill-parity.js' }
 ];
 
 async function runAllTests() {

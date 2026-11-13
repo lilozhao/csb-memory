@@ -6,9 +6,21 @@
 
 ## 版本
 
+**v1.7.2**（2026-11-12）— 🚨 **请用 v1.7.2**：修两个「照说明书做反而会失败」的 bug（阿契实测报告）—— ① `selfcheck` 忽略 `EXCELLENCE_AGENT`，设了 slug 就变 5/7，**越遵守说明越过不了验收** ② `SKILL.md` 格式模板里写死了若兰的名字，照「一字不改」执行会每天署别人的名。新增自检第 8 项锁回归（slug 分目录），现 **8/8**
+
+**v1.7.1**（2026-11-12）— 🚨 **v1.7.0 有 bug，请用 ≥v1.7.1**：修 `DATA_ROOT` 装错位置时会向上盲探到**另一个 Agent 的 workspace**（静默读到对方数据、不报错、写入会污染对方记录）；改为只认两种布局，其余报错退出；selfcheck 增第 7 项负向断言。三个三打卡随仓分发：`skills/excellence-daily/` 自包含包 · `EXCELLENCE_AGENT` 多租户 · streak 起点不再硬编码 · 篇幅上限硬校验
+
+**v1.7.0**（2026-11-12）— + **三个三打卡随仓分发**：`skills/excellence-daily/` 自包含分发包（SKILL + INSTALL + checkin/streak/selfcheck + experience）；`DATA_ROOT` 改向上探测（支持 `EXCELLENCE_DATA_ROOT`）；`EXCELLENCE_AGENT` 多租户；streak 起点不再硬编码；篇幅上限硬校验；`self_assessment` 六维缺一即拒；新增 parity 测试防两份代码漂移。⚠️ 本版 `DATA_ROOT` 有「装错位置读到别人数据」bug，用 v1.7.1
+
+**v1.6.0**（2026-11-05）— + **访问计数写回**：修 `query()` 只改内存不落盘（6,884/6,885 条 `access_count` 恒为 0，导致 lifecycle 遗忘机制判不出来）；定点行替换 + 攒批 + 原子写，490/490 全绿
+
 **v1.2.0**（2026-09-05）— v1.1 + **P0-4 不可篡改进化日志** + **P0-2 资产晋升门槛**
 
 **v1.3.0**（2026-10-22）— + **BID 词表位置约束（RFC v2.2 P-11/P-12 落码）**：口径声明三道门 + 提取器位置判定
+
+**v1.4.0**（2026-10-22）— + **BID 召回侧补丁**：四处加法（DECISION/CORRECTION/PROMISE/DIR 严格式）+ 修 2 个真 bug；金标集 v0.3 `P 100 / R 88.2 / F1 93.7`，429 测试全绿
+
+**v1.5.0**（2026-10-23）— + **RFC v2.3 P-15 落码（kind 枚举 B）**：默认三类不变 · 须报出（`loadDeclaration`）· 可扩展（`extended_kinds` 过 P-11 四门，缺 tier/anchor 拒收不静默）
 
 | 版本 | 日期 | 内容 |
 |:----:|:----:|:-----|
@@ -17,6 +29,11 @@
 | **v1.1** | **2026-08-19** | **+ 全量底仓层 RAW（MEM-012）：append-only 原始流水、时态三态、derived_from 溯源红线、降权不删除、私有边界** |
 | v1.1+ | 2026-08-20 | + 记忆入口规范（MEM-013）：学习心得/社区摘要自动入库、健康巡检（health-check.js） |
 | **v1.2** | **2026-09-05** | **+ P0-4 不可篡改进化日志（审计字段/变更审计流哈希链/原子写/存量锚定）+ P0-2 资产晋升门槛（verification_evidence 硬字段、无证据拒绝晋升、防自证、批量 ≥80% 门禁）** |
+| **v1.3** | **2026-10-22** | **+ BID 词表位置约束（RFC v2.2 P-11/P-12 落码）：口径声明三道门 + 提取器位置判定** |
+| **v1.4** | **2026-10-22** | **+ BID 召回侧补丁（四处加法 + 修 2 个真 bug）· 金标集 v0.3 P100/R88.2/F1 93.7 · 429 全绿** |
+| **v1.5** | **2026-10-23** | **+ RFC v2.3 P-15 落码（kind 枚举 B）：默认三类 · 须报出 · 可扩展，缺 tier/anchor 拒收** |
+
+> 细节与提交号见 `CHANGELOG.md`（2026-11-04 补录）。
 
 ## 模块结构
 
@@ -27,10 +44,11 @@ csb-memory/
 │   ├── hive/          # 虫巢记忆（v1.0）
 │   ├── propagation/   # 记忆传播（v1.0）
 │   └── raw/           # 全量底仓（v1.1）—— append-only 流水 + 时态 + derived_from
-├── test/              # 476 用例，通过率 100%（2026-10-26 实测）
+├── test/              # 508 用例，通过率 100%（2026-11-12 实测）
 ├── specs/             # SPEC-MEM-0001（BID 关系信号 · 一期 approved v2.0）/ 0002（四态回填 · done）
 ├── examples/          # 示例（含 raw-usage.js）
-├── scripts/           # sync-daily.js 日常同步（日记/学习/社区三入口）· sync-session.js 会话原文采集（主会话覆盖，A7 修复件）· community-digest.js 社区摘要 · dream.js 蒸馏 · health-check.js 健康巡检（均支持 --agent/CSB_MEMORY_AGENT 适配）
+├── skills/            # 可分发技能包（v1.7.0 起）：excellence-daily 三个三打卡 —— 装机时整体拷到 <ws>/skills/
+├── scripts/           # sync-daily.js 日常同步（日记/学习/社区三入口）· sync-session.js 会话原文采集（主会话覆盖，A7 修复件）· community-digest.js 社区摘要 · dream.js 蒸馏 · health-check.js 健康巡检（均支持 --agent/CSB_MEMORY_AGENT 适配）· excellence-checkin.js 三个三打卡 · excellence-streak.js 累计天数
 └── protocol/          # 协议文档（CSB-Memory-v1.1.md）
 ```
 
@@ -111,7 +129,7 @@ const results = await csbMemory.hive.query('中医');
 node test/run-all-tests.js
 ```
 
-覆盖：**当前全量：476 用例 100% 通过**（`npm test` 末行「总计: 476」，2026-10-26 实测）。
+覆盖：**当前全量：490 用例 100% 通过**（`npm test` 末行「总计: 490」，2026-11-05 实测）。
 构成：核心 56 + 生命周期 21 + 价值评分 25 + HIVE 9 + 传播 19 + RAW 16（v1.1）+ 演化 20（P0-4）
 ＋ Harness² 经验 18 + 晋升门 22（P0-2）＝ 206
 ＋ BID 系列（SPEC-MEM-0001/0002 + O6-S1/S3/S4 + RFC v2.2 P-11/P-12 + v2.3 P-15）270

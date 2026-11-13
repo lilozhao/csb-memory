@@ -48,16 +48,9 @@ const AGENT = resolveAgent(process.argv.slice(2));
 const ALLOW_MISSING = process.argv.slice(2).includes('--allow-missing');
 
 // 类型推断：关键词 → 记忆类型
-function inferType(text) {
-  if (/^承诺|^约定|^誓言|答应你|我承诺|约定是/.test(text)) return 'promise';
-  if (/决定|确定|确认|拍板|采用/.test(text)) return 'decision';
-  if (/教训|踩坑|学到了|经验/.test(text)) return 'lesson';
-  if (/发布|完成|上线|里程碑|达成|✅/.test(text)) return 'milestone';
-  if (/新增|加入|认识|报到|发现|建立/.test(text)) return 'discovery';
-  if (/待办|TODO|要记得|需要/.test(text)) return 'todo';
-  if (/修复|bug|问题|报错/.test(text)) return 'fix';
-  return 'event';
-}
+// 2026-11-09：实现移到 lib/sync/type-infer.js（判据只有一份，可单测）。
+// 原私有版把「签字/同意结项 + 报告」判成 event → 不在 dream 的 DISTILLABLE 里 → 静默丢。
+const { inferType } = require('../lib/sync/type-infer');
 
 // 类型 → 结构性权重（身份/承诺类高权重）
 function structuralWeight(type, text) {

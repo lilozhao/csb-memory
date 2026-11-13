@@ -37,7 +37,12 @@ function resolveAgent(args) {
 const AGENT = resolveAgent(process.argv.slice(2));
 
 // 值得蒸馏的流水类型
-const DISTILLABLE = ['decision', 'proposal', 'response', 'milestone', 'lesson'];
+// 2026-11-09（一澜拍板方案 C）：加入 'event'，但 event 有额外门——
+//   只有当它带可核实证据（P0-2 gate）且长度 ≥ EVENT_MIN 时才蒸，否则照旧跳过。
+//   理由：inferType 关键词表不可能穷尽；分类偏了不该等于「静默丢」。
+//   权威名单仍在 lib/sync/type-infer.js，两边必须同源。
+const DISTILLABLE = ['decision', 'proposal', 'response', 'milestone', 'lesson', 'event'];
+const EVENT_MIN = 40; // event 纳入蒸馏的最小字符数（挡掉「初白路过」这类寒暄）
 
 // 流水类型 → 结论记忆类型
 function mapType(rawType) {
@@ -60,6 +65,9 @@ function distill(stream, pending) {
   if (!DISTILLABLE.includes(stream.type)) return null;
   // 太短的不值得蒸馏
   if (stream.content.length < 12) return null;
+  // event 额外门（2026-11-09 · 方案 C）：分类靠关键词，偏了不该等于「静默丢」，
+  // 但也不该让事件噪声批量入 core。两道都得过：足够长 + 有可核实证据。
+  if (stream.type === 'event' && stream.content.length < EVENT_MIN) return null;
 
   // P0-2 晋升门槛：无有效可核实证据 → 拒绝晋升（留在 raw，降权不删除）
   const gateCheck = gate.canPromote(stream, { producer: AGENT });
