@@ -47,7 +47,9 @@ csb-memory/
 ├── test/              # 508 用例，通过率 100%（2026-11-12 实测）
 ├── specs/             # SPEC-MEM-0001（BID 关系信号 · 一期 approved v2.0）/ 0002（四态回填 · done）
 ├── examples/          # 示例（含 raw-usage.js）
-├── skills/            # 可分发技能包（v1.7.0 起）：excellence-daily 三个三打卡 —— 装机时整体拷到 <ws>/skills/
+├── skills/            # 可分发技能包（装机时整体拷到 <ws>/skills/）：
+│                      #   excellence-daily 三个三打卡（v1.7.0 起，已发布）
+│                      #   todo-daily 今日 3 件（2026-11-13 试点，未发版 · 见其 INSTALL.md 第 5 节「你的台账得长什么样」）
 ├── scripts/           # sync-daily.js 日常同步（日记/学习/社区三入口）· sync-session.js 会话原文采集（主会话覆盖，A7 修复件）· community-digest.js 社区摘要 · dream.js 蒸馏 · health-check.js 健康巡检（均支持 --agent/CSB_MEMORY_AGENT 适配）· excellence-checkin.js 三个三打卡 · excellence-streak.js 累计天数
 └── protocol/          # 协议文档（CSB-Memory-v1.1.md）
 ```
