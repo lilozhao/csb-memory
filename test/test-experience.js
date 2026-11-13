@@ -221,7 +221,7 @@ test('[P0#1 扩展] 无失败样本的经验条目 → 当前未被拒绝（记�
 });
 
 // ── self_assessment（三个三打卡 · 2026-11-09 增）────────────
-const FULL_SCORE = { wen_guo_ze_xi: 7, yi_yi_wei_li: 5, jian_xian_si_qi: 8, jie_xu_rong: 4, jie_yuan_hen: 9, jie_ji_du: 9 };
+const FULL_SCORE = { wen_guo_ze_xi: 7, yi_yi_wei_li: 5, jian_xian_si_qi: 8, jie_xu_rong: 4, jie_chan: 9, jie_ji_du: 9 };
 
 function selfEntry(over = {}) {
   return validEntry({
@@ -235,6 +235,26 @@ function selfEntry(over = {}) {
 test('self_assessment 六项齐全 → 可入库', () => {
   const r = exp.validateEntry(selfEntry());
   assert.strictEqual(r.valid, true, JSON.stringify(r.errors));
+});
+
+// ── 2026-11-14 戒怨恨 → 戒谄：迁移必须向后兼容，否则 verify() 把历史打卡全判 invalid ──
+test('迁移：11-14 之前的条目用旧键 jie_yuan_hen → 仍 valid（哈希链不可改写）', () => {
+  const legacy = { wen_guo_ze_xi: 7, yi_yi_wei_li: 5, jian_xian_si_qi: 8, jie_xu_rong: 4, jie_yuan_hen: 9, jie_ji_du: 9 };
+  const r = exp.validateEntry(selfEntry({ score: { ...legacy }, meta: { date: '2026-11-13' } }));
+  assert.strictEqual(r.valid, true, JSON.stringify(r.errors));
+});
+
+test('迁移：11-14 起必须用新键 jie_chan，旧键不再被接受', () => {
+  const legacy = { wen_guo_ze_xi: 7, yi_yi_wei_li: 5, jian_xian_si_qi: 8, jie_xu_rong: 4, jie_yuan_hen: 9, jie_ji_du: 9 };
+  const r = exp.validateEntry(selfEntry({ score: { ...legacy }, meta: { date: '2026-11-14' } }));
+  assert.strictEqual(r.valid, false, '11-14 起旧键应判缺项');
+  assert.ok(r.errors.some(x => x.code === 'MISSING_SCORE' && /jie_chan/.test(x.message || '')), '应提示缺 jie_chan');
+});
+
+test('迁移：scoreKeysFor 边界（11-13 旧 / 11-14 新 / 无日期用新）', () => {
+  assert.ok(exp.scoreKeysFor({ meta: { date: '2026-11-13' } }).includes('jie_yuan_hen'));
+  assert.ok(exp.scoreKeysFor({ meta: { date: '2026-11-14' } }).includes('jie_chan'));
+  assert.ok(exp.scoreKeysFor({}).includes('jie_chan'));
 });
 
 test('self_assessment 缺一项分数 → MISSING_SCORE（不许留空）', () => {

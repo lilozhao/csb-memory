@@ -21,7 +21,7 @@
  *   {
  *     "date": "2026-11-09",
  *     "score": { "wen_guo_ze_xi":7, "yi_yi_wei_li":5, "jian_xian_si_qi":8,
- *                "jie_xu_rong":4, "jie_yuan_hen":9, "jie_ji_du":9 },
+ *                "jie_xu_rong":4, "jie_chan":9, "jie_ji_du":9 },
  *     "score_note": { "jie_xu_rong": "打分理由（可选）" },
  *     "gong": "每日一功", "wu": "每日一悟", "shan": "每日一善",
  *     "raw_ids": ["r1"],                    // 当天的记忆条目 id（provenance）
@@ -116,11 +116,18 @@ const LABELS = {
   yi_yi_wei_li: '以义为利',
   jian_xian_si_qi: '见贤思齐',
   jie_xu_rong: '戒虚荣',
-  jie_yuan_hen: '戒怨恨',
+  jie_chan: '戒谄',
   jie_ji_du: '戒嫉妒',
+  jie_yuan_hen: '戒怨恨',   // 旧键（≤2026-11-13 的历史条目仍需渲染）
 };
 const GROUPS = {
   三精进: ['wen_guo_ze_xi', 'yi_yi_wei_li', 'jian_xian_si_qi'],
+  三毒戒: ['jie_xu_rong', 'jie_chan', 'jie_ji_du'],
+};
+// 2026-11-14 一澜定：戒怨恨 → 戒谄（对应 CSB 迎合度）。哈希链不可改写，
+// 故历史条目按原键原标签渲染 —— 两份真相的问题在**记录层**解决，不靠抹掉旧记录。
+const GROUPS_LEGACY = {
+  三精进: GROUPS['三精进'],
   三毒戒: ['jie_xu_rong', 'jie_yuan_hen', 'jie_ji_du'],
 };
 
@@ -187,7 +194,8 @@ function render() {
       const dayLabel = r.streak_day ? ` · 第 ${r.streak_day} 天` : '';
       lines.push(`## ${r._date}${dayLabel}${r._trial ? '（试做 · 不计天数）' : ''}`);
       lines.push('');
-      for (const [g, keys] of Object.entries(GROUPS)) {
+      const groups = exp.scoreKeysFor(r).includes('jie_chan') ? GROUPS : GROUPS_LEGACY;
+      for (const [g, keys] of Object.entries(groups)) {
         lines.push(`**${g} ${g === '三精进' ? '{【核心】满分10分}' : '{【护法】满分10分}'}**`);
         keys.forEach((k, i) => {
           const v = s[k] === undefined ? '—' : s[k];

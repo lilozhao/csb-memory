@@ -90,7 +90,7 @@ const MD_BASE = SLUG ? path.join(WS, 'memory', 'excellence', SLUG) : path.join(W
 const goodInput = {
   date: today,
   count_in_streak: true,
-  score: { wen_guo_ze_xi: 7, yi_yi_wei_li: 5, jian_xian_si_qi: 8, jie_xu_rong: 4, jie_yuan_hen: 9, jie_ji_du: 9 },
+  score: { wen_guo_ze_xi: 7, yi_yi_wei_li: 5, jian_xian_si_qi: 8, jie_xu_rong: 4, jie_chan: 9, jie_ji_du: 9 },
   score_note: { jie_xu_rong: '装机自检：无负记录也未回避' },
   gong: '装机自检一功',
   wu: '装机自检一悟',

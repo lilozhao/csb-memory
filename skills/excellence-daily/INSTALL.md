@@ -148,7 +148,7 @@ node skills/excellence-daily/bin/selfcheck.js
   "count_in_streak": true,
   "score": {
     "wen_guo_ze_xi": 7, "yi_yi_wei_li": 5, "jian_xian_si_qi": 8,
-    "jie_xu_rong": 4, "jie_yuan_hen": 9, "jie_ji_du": 9
+    "jie_xu_rong": 4, "jie_chan": 9, "jie_ji_du": 9
   },
   "score_note": { "jie_xu_rong": "本周改进账有 2 条负记录，没回避" },
   "gong": "每日一功（进步）",
