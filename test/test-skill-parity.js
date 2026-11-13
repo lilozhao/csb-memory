@@ -28,8 +28,14 @@ const PAIRS = [
   ['skills/excellence-daily/lib/experience.js', 'lib/experience.js'],
 ];
 
+// [2026-11-13] todo-daily 对（镜像同一形状）：技能包是本仓分发源，
+//   装机后跑的是 <ws>/skills/todo-daily/。本仓**不应**再有 scripts/ 运行版——
+//   todo-daily 零依赖、不承担仓库内部职责（excellence-daily 有，因为 cron 直调它）。
+//   所以校验放在下面的「workspace 生产副本交叉校验」里，不在这里造对。
+
 let pass = 0;
 let fail = 0;
+let skipped = 0;
 
 const sha = (f) => crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex');
 
@@ -91,8 +97,33 @@ if (fs.existsSync(path.join(wsDir, 'SKILL.md'))) {
   console.log(`\n  ⚪ 跳过交叉校验（未找到 ${wsDir}）—— 非本机生产环境时正常`);
 }
 
-console.log(`\n${fail === 0 ? '✅' : '❌'} ${pass} passed, ${fail} failed`);
+// [2026-11-13] todo-daily 交叉校验：同日新增。
+//   为什么它**比** excellence-daily 更容易漂移：
+//   excellence-daily 有 scripts/ 运行版，本仓内部一对就能抓住漂移；
+//   todo-daily 只有「本仓分发源 + 生产装机」两份，没有中间层，
+//   改了生产不回写仓库（或反之）**本仓内部完全看不出来**。
+//   11-13 当天我就手拷了两份 —— 靠人记得同拷，就是下一次漂移的种子。
+const wsTodo = wsOverride ? path.join(wsOverride, 'skills', 'todo-daily') : path.resolve(ROOT, '..', 'skills', 'todo-daily');
+const TODO_FILES = ['SKILL.md', 'INSTALL.md', 'bin/todo-three.js', 'bin/selfcheck.js', 'test/pick.test.js', 'references/why-separate.md'];
+if (fs.existsSync(path.join(ROOT, 'skills', 'todo-daily', 'SKILL.md')) && fs.existsSync(path.join(wsTodo, 'SKILL.md'))) {
+  console.log(`\n  交叉校验 todo-daily 生产副本: ${wsTodo}`);
+  for (const rel of TODO_FILES) {
+    const wf = path.join(wsTodo, rel);
+    const rf = path.join(ROOT, 'skills/todo-daily', rel);
+    if (!fs.existsSync(wf)) { console.log(`  ✗ 生产副本缺文件: ${rel}`); fail++; continue; }
+    if (!fs.existsSync(rf)) { console.log(`  ✗ 仓库分发源缺文件: ${rel}`); fail++; continue; }
+    if (sha(wf) === sha(rf)) { console.log(`  ✓ ${rel}`); pass++; }
+    else { console.log(`  ✗ ${rel} 与生产副本不一致 → 改了生产没同步回仓库（或反之）`); fail++; }
+  }
+} else {
+  // 两侧都无 → 本分支尚未引入 todo-daily（main 上就是这种状态），正常
+  console.log('\n  ⚪ 跳过 todo-daily 交叉校验（本分支/本机未装）');
+  skipped++;
+}
+
+console.log(`\n${fail === 0 ? '✅' : '❌'} ${pass} passed, ${fail} failed${skipped ? `, ${skipped} skipped（不计入通过）` : ''}`);
 // 兼容 run-all-tests.js 的计数格式
 console.log(`通过: ${pass}`);
 console.log(`失败: ${fail}`);
+if (skipped) console.log(`跳过: ${skipped}`);
 process.exit(fail === 0 ? 0 : 1);
