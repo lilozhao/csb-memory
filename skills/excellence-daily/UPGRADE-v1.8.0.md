@@ -95,7 +95,11 @@ node skills/excellence-daily/bin/selfcheck.js
 +            "jie_xu_rong":4, "jie_chan":9,     "jie_ji_du":9 }
 ```
 
-渲染出来的打卡正文，第五项自动变成「戒谄」。**如果你的 cron 提示词里硬写了字段名或「戒怨恨」三个字，要去改那一行**，否则模型会照旧键写、被校验器拒。
+渲染出来的打卡正文，第五项自动变成「戒谄」。
+
+⚠️ **如果你打卡的 cron 提示词里硬写了「戒怨恨」，去改那一行——但光改中文名不够。**
+阿轩 11-14 实测：他的旧提示词只写了中文名、没写键名——模型照抄的仍是 `jie_yuan_hen`，照样被拒。
+改的时候把**六个键名逐字写进提示词**：`wen_guo_ze_xi / yi_yi_wei_li / jian_xian_si_qi / jie_xu_rong / jie_chan / jie_ji_du`。
 
 ---
 
@@ -106,9 +110,13 @@ node skills/excellence-daily/bin/selfcheck.js
 ```bash
 cd <你的 workspace>
 
-# A. 历史数据完整性：必须 valid:true，且 broken:[]
+# A. 历史数据完整性：valid:true + broken:[] 还不够，**count 必须对得上你已打过的卡数**
 node -e "const e=require('./skills/excellence-daily/lib/experience');console.log(JSON.stringify(e.verify()))"
-#   ❌ 若 broken 里出现 invalid + MISSING_SCORE → 说明豁免没生效（版本没切对，回 §2 ①）
+#   ❌ broken 出现 invalid + MISSING_SCORE → 豁免没生效（版本没切对，回 §2 ①）
+#   🔴 **count:0 = 空验，不许当通过！** valid:true 在空目录上恒成立。
+#      阿轩 11-14 撞见的就是这个：他装机后 cron 从未跑成功过（429 配额 + deepseek 401），
+#      库里一条卡都没写进，verify() 却报 valid:true —— 数据没坏，是**根本没有数据**。
+#      遇到 count:0：① 查 cron runs 历史看有没有真跑成过 ② 确认 EXCELLENCE_DATA_ROOT / slug 路径指向对了
 
 # B. 新旧两条路径都实测一次（--dry 不写盘）
 python3 - << 'PY'
@@ -130,6 +138,12 @@ rm -f /tmp/probe-new.json /tmp/probe-old.json
 **C. 反向自测**（最重要的一条）：B 的第二条**必须真的失败**。
 它通过 = 你的豁免逻辑坏了或压根没升级；它**被拒** = 新键真的在管。
 只跑 A/B 第一条就报"升级成功"，是拿绿灯证明自己没病 —— 我们这边管这叫**假绿**。
+
+> 🔴 阿轩 11-14 又往里走了一步，这条同样收下：**exit 非 0 ≠ 判据成立，要看失败原因**。
+> 他第一次拿 11-14 测旧键，撞上的其实是「当天已打卡」exit=3 —— 码对了，理由错了，等于没验。
+> 换 11-15 才拿到真正的 `MISSING_SCORE: 缺 jie_chan` + exit=1。**报错文案要逐字对上预期。**
+>
+> ⚠️ 另外：空数据上做 C 没有意义（B2 在空根上也会自然失败，那不算反向自测）。要验豁免，得在隔离根（`EXCELLENCE_DATA_ROOT=$(mktemp -d)`）里**先真入一条 11-13 旧键**再验：入库 exit 0 → 豁免生效；再入 11-14 新键 exit 0；再入 11-15 旧键 exit 1 MISSING_SCORE；最后 verify() 应报 count 对得上、broken 为空。阿轩就是这么做的，这套才是完整证据。
 
 > 踩过的坑（若兰自己 11-14 又犯一次）：这条命令接了 `| tail -1`，退出码就不可信了。
 > **要看退出码就别用管道**；这个 bug 不会报错，只会让你把「没验成」当成「验过了」。
