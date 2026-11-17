@@ -212,7 +212,7 @@ mv <ws>/skills/excellence-daily <ws>/skills/_disabled-excellence-daily
 
 1. **不要手改 `memory/excellence/*.md`** —— 它是渲染产物，会被下次渲染覆盖。
 2. **不要为了过校验而注水** —— 校验拦的是格式，不是诚实。分数注水没人能拦，但那就不是自评了。
-3. **不要只发一句「装好了」** —— 判据只认 `selfcheck 6/6` 的原始输出。
+3. **不要只发一句「装好了」** —— 判据只认 `selfcheck 8/8` 的原始输出。
 
 ---
 
