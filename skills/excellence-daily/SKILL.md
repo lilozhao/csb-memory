@@ -103,6 +103,7 @@ node projects/csb-improvement-ledger/tally.js | grep -E '"negative"|notReproduci
 
 - 起点：**2026-11-09 = 第 1 天**（AI 自评起点）
 - 计数文件：`memory/excellence/streak.json`（`{startDate, lastDate, days}`）
+- 记账日期 = **打卡日期**，不是机器当前时间（`--mark [YYYY-MM-DD]`，v1.8.1 起；无参才回落本机今天）
 - 断档不归零，记 `gaps`（诚实比好看重要）。历史 155 天打卡见 `memory/archive/daily_checkin_*.md`，**不合并、不删** —— 那是人打的卡，这是 AI 打的卡，不是同一条线。
 
 ## 执行流程（2026-11-10 更新：入口已抽进 skill 内部，自带依赖）
@@ -185,6 +186,8 @@ EXCELLENCE_AGENT=ruolan    # 合法：[A-Za-z0-9_-]{1,32}
 
 `streak.json` 由脚本自动维护；`count_in_streak: false` 用于试做（不计天数）。
 断档记 `gaps[]`，**不归零** —— 诚实比好看重要。
+
+**日期口径（v1.8.1）**：`node bin/excellence-streak.js --mark [YYYY-MM-DD]` 按**打卡日期**记账，不按机器当前时间——跨零点补卡 / 回填时不会把 `lastDate` 写成明天。无参才用本机今天；目标日早于已记 `lastDate` 时拒写不回退（确需补录请手工编辑 `streak.json`，并在 `manualFix` 留原因）。`excellence-checkin.js` 已自动转发 `payload.date`。
 
 ## 失败处置
 

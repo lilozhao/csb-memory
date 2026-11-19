@@ -3,8 +3,15 @@
 /**
  * excellence-streak.js —— 「拾级而上」累计天数维护
  * 用法：
- *   node scripts/excellence-streak.js --status   只读当前状态
- *   node scripts/excellence-streak.js --mark     把今天记为已打卡（幂等）
+ *   node scripts/excellence-streak.js --status              只读当前状态
+ *   node scripts/excellence-streak.js --mark [YYYY-MM-DD]   记为已打卡（幂等；默认本机今天）
+ *   也可写 --date=YYYY-MM-DD / --date YYYY-MM-DD
+ *
+ * [2026-11-20 W-64 修] 原实现 `--mark` 恒用本机当天日期，跨零点回填会记错日子，
+ *   并凭空写 gaps。现在：
+ *     ① 可显式传打卡日期，日期取「输入的打卡日」而非「机器现在几点」；
+ *     ② 目标日早于已记最后日 → **不回退**，只提示不写盘（负向护栏）；
+ *     ③ 断档只按纯日期差算，且同一 lastDate 不重复记 gap。
  */
 const fs = require('fs');
 const path = require('path');
@@ -118,6 +125,27 @@ function save(s) {
 }
 
 const args = process.argv.slice(2);
+
+const isDate = (v) => {
+  const s = String(v || '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const d = new Date(`${s}T00:00:00Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;  // 2026-13-45 这类要拒
+};
+/** 取 `--mark` 的目标日期；无参 → null（由调用方回落到本机今天） */
+function argDate() {
+  const eq = args.find((a) => a.startsWith('--date='));
+  if (eq) return eq.slice('--date='.length);
+  const di = args.indexOf('--date');
+  if (di > -1 && args[di + 1] && !args[di + 1].startsWith('-')) return args[di + 1];
+  const mi = args.indexOf('--mark');
+  const next = mi > -1 ? args[mi + 1] : null;
+  if (next && !next.startsWith('-')) return next;
+  return null;
+}
+const dayDiff = (a, b) =>
+  Math.round((Date.parse(`${a}T00:00:00Z`) - Date.parse(`${b}T00:00:00Z`)) / 86400000);
+
 if (args.includes('--status')) {
   const s = load();
   console.log(JSON.stringify(s, null, 2));
@@ -125,18 +153,31 @@ if (args.includes('--status')) {
 }
 if (args.includes('--mark')) {
   const s = load();
-  const today = localToday();
-  if (s.lastDate === today) { console.log(`已记过（${today}，第 ${s.days} 天），幂等跳过`); process.exit(0); }
-  // 断档检测：今天与上次之间隔了几天
+  const raw = argDate();
+  const target = raw ? String(raw).trim() : localToday();
+  if (!isDate(target)) {
+    console.error(`❌ 日期格式必须 YYYY-MM-DD，收到 ${JSON.stringify(raw)}`);
+    process.exit(2);
+  }
+  if (s.lastDate === target) { console.log(`已记过（${target}，第 ${s.days} 天），幂等跳过`); process.exit(0); }
+  // 负向护栏：不许用旧日期把已记的最后日回退（跨零点回填的安全网）
+  if (s.lastDate && target < s.lastDate) {
+    console.log(`⚠️ 目标日 ${target} 早于已记最后日 ${s.lastDate}：不回退，未写入（确需补录请手工编辑 streak.json）`);
+    process.exit(0);
+  }
+  // 断档检测：目标日与上次之间隔了几天（同 lastDate 不重复记）
   if (s.lastDate) {
-    const gapDays = Math.round((new Date(today) - new Date(s.lastDate)) / 86400000) - 1;
-    if (gapDays > 0) s.gaps.push({ after: s.lastDate, missed: gapDays });
+    const gapDays = dayDiff(target, s.lastDate) - 1;
+    if (gapDays > 0 && !(s.gaps || []).some((g) => g.after === s.lastDate)) {
+      s.gaps = s.gaps || [];
+      s.gaps.push({ after: s.lastDate, missed: gapDays });
+    }
   }
   s.days = (s.days || 0) + 1;
-  s.lastDate = today;
+  s.lastDate = target;
   save(s);
-  console.log(`✅ 第 ${s.days} 天（${today}）${s.gaps.length ? ` · 累计断档 ${s.gaps.reduce((a, g) => a + g.missed, 0)} 天` : ''}`);
+  console.log(`✅ 第 ${s.days} 天（${target}）${s.gaps && s.gaps.length ? ` · 累计断档 ${s.gaps.reduce((a, g) => a + g.missed, 0)} 天` : ''}`);
   process.exit(0);
 }
-console.error('用法：node scripts/excellence-streak.js --status | --mark');
+console.error('用法：node scripts/excellence-streak.js --status | --mark [YYYY-MM-DD]');
 process.exit(2);

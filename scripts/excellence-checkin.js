@@ -326,7 +326,7 @@ if (has('--dry')) {
 try {
   const r = checkin(payload);
   if (payload.count_in_streak !== false) {
-    require('child_process').execSync(`node ${STREAK_SCRIPT} --mark`, { stdio: 'inherit' });
+    require('child_process').execSync(`node ${STREAK_SCRIPT} --mark ${payload.date}`, { stdio: 'inherit' });
   }
   render();
   console.log(`✅ 打卡已入库 id=${r.record.id} · 已渲染 md`);
